@@ -3,15 +3,33 @@ import distributions as dist
 import constants
 
 
-gripperError = dist.NormalDist(constants.GRIPPER_ERROR_MEAN, constants.GRIPPER_ERROR_STD)
-cameraError = dist.UniformDist(constants.CAMERA_ERROR_MIN, constants.CAMERA_ERROR_MAX)
-totalError = dist.CombinedDist([gripperError, cameraError])
+encoderUncertaintyX = dist.UniformDist(constants.ENCODER_X_MIN, constants.ENCODER_X_MAX)
+encoderUncertaintyY = dist.UniformDist(constants.ENCODER_Y_MIN, constants.ENCODER_Y_MAX)
+encoderUncertaintyZ = dist.UniformDist(constants.ENCODER_Z_MIN, constants.ENCODER_Z_MAX)
+encoderUncertainty = dist.Dist3D(encoderUncertaintyX, encoderUncertaintyY, encoderUncertaintyZ)
 
-multiplot = dist.MultiPlot(2, 3)
+gripperUncertaintyX = dist.UniformDist(constants.GRIPPER_X_MIN, constants.GRIPPER_X_MAX)
+gripperUncertaintyY = dist.UniformDist(constants.GRIPPER_Y_MIN, constants.GRIPPER_Y_MAX)
+gripperUncertaintyZ = dist.UniformDist(constants.GRIPPER_Z_MIN, constants.GRIPPER_Z_MAX)
+gripperUncertainty = dist.Dist3D(gripperUncertaintyX, gripperUncertaintyY, gripperUncertaintyZ)
 
-dist.plot_histogram(multiplot, gripperError.sample(10000), bins=100, title="Gripper Error")
-dist.plot_histogram(multiplot, cameraError.sample(10000), bins=100, title="Camera Error")
-dist.plot_histogram(multiplot, totalError.sample(10000), bins=100, title="Total Error")
+imageRecognitionUncertaintyX = dist.NormalDist(constants.IMAGE_RECOGNITION_X_MEAN, constants.IMAGE_RECOGNITION_X_STD)
+imageRecognitionUncertaintyY = dist.NormalDist(constants.IMAGE_RECOGNITION_Y_MEAN, constants.IMAGE_RECOGNITION_Y_STD)
+imageRecognitionUncertaintyZ = dist.NormalDist(constants.IMAGE_RECOGNITION_Z_MEAN, constants.IMAGE_RECOGNITION_Z_STD)
+imageRecognitionUncertainty = dist.Dist3D(imageRecognitionUncertaintyX, imageRecognitionUncertaintyY, imageRecognitionUncertaintyZ)
 
-plt.tight_layout()
-plt.show()
+totalUncertainty = dist.CombinedDist([encoderUncertainty, gripperUncertainty, imageRecognitionUncertainty])
+
+boundary = {
+    "radius_xy": constants.XY_TOLERANCE,
+    "z_tolerance": constants.Z_TOLERANCE,
+}
+
+dist.plot_point_cloud(totalUncertainty.sample(1000), boundary=boundary)
+
+# multiplot = dist.MultiPlot(2, 3)
+
+# # dist.plot_histogram(multiplot, totalUncertainty.sample(10000), bins=100, title="Total Uncertainty")
+
+# plt.tight_layout()
+# plt.show()

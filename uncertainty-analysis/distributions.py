@@ -22,7 +22,25 @@ class CombinedDist:
         self.dists = dists
     
     def sample(self, n=1):
-        return sum([d.sample(n) for d in self.dists])
+        samples = numpy.array([d.sample(n) for d in self.dists])
+        return numpy.sum(samples, axis=0)
+    
+class Dist3D:
+    def __init__(self, x_dist, y_dist, z_dist):
+        self.x_dist = x_dist
+        self.y_dist = y_dist
+        self.z_dist = z_dist
+
+    def sample(self, n=1):
+        points = []
+        coordinates = numpy.array([self.x_dist.sample(n), self.y_dist.sample(n), self.z_dist.sample(n)]).T
+        for coordinate in coordinates:
+            point = []
+            point.append(coordinate[0])
+            point.append(coordinate[1])
+            point.append(coordinate[2])
+            points.append(point)
+        return points
     
 # Plotting functions
 
@@ -47,3 +65,32 @@ def plot_histogram(multiplot, data, bins=None, title=None):
     ax.set_ylabel('Frequency')
     ax.set_title(title)
     ax.grid(True)
+
+def plot_point_cloud(data, boundary):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    inside = []
+    outside = []
+    for point in data:
+        if (numpy.hypot(point[0], point[1]) <= boundary['radius_xy'] and
+            abs(point[2]) <= boundary['z_tolerance']):
+            inside.append(point)
+        else:
+            outside.append(point)
+    
+    inside = numpy.array(inside)
+    outside = numpy.array(outside)
+    
+    if inside.size > 0:
+        ax.scatter(inside[:, 0], inside[:, 1], inside[:, 2], c='green', marker='o', label='Inside tolerance (' + str(100 * len(inside) / len(data))  + '%)')
+    
+    if outside.size > 0:
+        ax.scatter(outside[:, 0], outside[:, 1], outside[:, 2], c='red', marker='o', label='Outside tolerance(' + str(100 * len(outside) / len(data))  + '%)')
+    
+    ax.set_xlabel('X (mm)')
+    ax.set_ylabel('Y (mm)')
+    ax.set_zlabel('Z (mm)')
+    ax.legend()
+    
+    plt.show()
