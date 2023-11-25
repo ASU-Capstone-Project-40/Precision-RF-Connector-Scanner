@@ -13,19 +13,29 @@ gripperUncertaintyY = dist.UniformDist(constants.GRIPPER_Y_MIN, constants.GRIPPE
 gripperUncertaintyZ = dist.UniformDist(constants.GRIPPER_Z_MIN, constants.GRIPPER_Z_MAX)
 gripperUncertainty = dist.Dist3D(gripperUncertaintyX, gripperUncertaintyY, gripperUncertaintyZ)
 
-imageRecognitionUncertaintyX = dist.NormalDist(constants.IMAGE_RECOGNITION_X_MEAN, constants.IMAGE_RECOGNITION_X_STD)
-imageRecognitionUncertaintyY = dist.NormalDist(constants.IMAGE_RECOGNITION_Y_MEAN, constants.IMAGE_RECOGNITION_Y_STD)
-imageRecognitionUncertaintyZ = dist.NormalDist(constants.IMAGE_RECOGNITION_Z_MEAN, constants.IMAGE_RECOGNITION_Z_STD)
-imageRecognitionUncertainty = dist.Dist3D(imageRecognitionUncertaintyX, imageRecognitionUncertaintyY, imageRecognitionUncertaintyZ)
+cameraUncertaintyX = dist.UniformDist(constants.CAMERA_X_MIN, constants.CAMERA_X_MAX)
+cameraUncertaintyY = dist.UniformDist(constants.CAMERA_Y_MIN, constants.CAMERA_Y_MAX)
+cameraUncertaintyZ = dist.UniformDist(constants.CAMERA_Z_MIN, constants.CAMERA_Z_MAX)
+cameraUncertainty = dist.Dist3D(cameraUncertaintyX, cameraUncertaintyY, cameraUncertaintyZ)
 
-totalUncertainty = dist.CombinedDist([encoderUncertainty, gripperUncertainty, imageRecognitionUncertainty])
+homingUncertaintyX = dist.UniformDist(constants.HOMING_X_MIN, constants.HOMING_X_MAX)
+homingUncertaintyY = dist.UniformDist(constants.HOMING_Y_MIN, constants.HOMING_Y_MAX)
+homingUncertaintyZ = dist.UniformDist(constants.HOMING_Z_MIN, constants.HOMING_Z_MAX)
+homingUncertainty = dist.Dist3D(homingUncertaintyX, homingUncertaintyY, homingUncertaintyZ)
+
+totalUncertainty = dist.CombinedDist(
+    [encoderUncertainty, 
+    gripperUncertainty, 
+    cameraUncertainty, 
+    homingUncertainty,
+    ])
 
 boundary = {
     "radius_xy": constants.XY_TOLERANCE,
     "z_tolerance": constants.Z_TOLERANCE,
 }
 
-dist.plot_point_cloud(totalUncertainty.sample(1000), boundary=boundary)
+dist.plot_point_cloud(totalUncertainty.sample(100000), boundary=boundary)
 
 # multiplot = dist.MultiPlot(2, 3)
 
