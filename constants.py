@@ -15,12 +15,12 @@ ENCODER_Z_MAX = 0.01
 
 # Gripper Uncertainty Constants (mm)
 # Distribution: Uniform
-GRIPPER_X_MIN = -0.02
-GRIPPER_X_MAX = 0.02
-GRIPPER_Y_MIN = -0.02
-GRIPPER_Y_MAX = 0.02
-GRIPPER_Z_MIN = -0.02
-GRIPPER_Z_MAX = 0.02
+GRIPPER_X_MIN = -0.129
+GRIPPER_X_MAX = 0.129
+GRIPPER_Y_MIN = -0.129
+GRIPPER_Y_MAX = 0.129
+GRIPPER_Z_MIN = -0.129
+GRIPPER_Z_MAX = 0.129
 
 # Camera Resolution Uncertainty Constants
 # Distribution: Uniform
@@ -30,13 +30,3 @@ CAMERA_Y_MIN = -0.0194
 CAMERA_Y_MAX = 0.0194
 CAMERA_Z_MIN = -0.0802
 CAMERA_Z_MAX = 0.0802
-
-# Homing Uncertainty Constants
-# Distribution: Uniform
-HOMING_X_MIN = -0.01
-HOMING_X_MAX = 0.01
-HOMING_Y_MIN = -0.01
-HOMING_Y_MAX = 0.01
-HOMING_Z_MIN = -0.01
-HOMING_Z_MAX = 0.01
-

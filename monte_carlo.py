@@ -18,16 +18,11 @@ cameraUncertaintyY = dist.UniformDist(constants.CAMERA_Y_MIN, constants.CAMERA_Y
 cameraUncertaintyZ = dist.UniformDist(constants.CAMERA_Z_MIN, constants.CAMERA_Z_MAX)
 cameraUncertainty = dist.Dist3D(cameraUncertaintyX, cameraUncertaintyY, cameraUncertaintyZ)
 
-homingUncertaintyX = dist.UniformDist(constants.HOMING_X_MIN, constants.HOMING_X_MAX)
-homingUncertaintyY = dist.UniformDist(constants.HOMING_Y_MIN, constants.HOMING_Y_MAX)
-homingUncertaintyZ = dist.UniformDist(constants.HOMING_Z_MIN, constants.HOMING_Z_MAX)
-homingUncertainty = dist.Dist3D(homingUncertaintyX, homingUncertaintyY, homingUncertaintyZ)
 
 totalUncertainty = dist.CombinedDist(
     [encoderUncertainty, 
     gripperUncertainty, 
     cameraUncertainty, 
-    homingUncertainty,
     ])
 
 boundary = {
