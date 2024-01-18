@@ -11,10 +11,13 @@ public:
      * \throws boost::system::system_error if cannot open the
      * serial device
      */
-    SimpleSerial(std::string port, unsigned int baud_rate)
+    SimpleSerial(std::string port)
     : io(), serial(io,port)
     {
-        serial.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
+        serial.set_option(boost::asio::serial_port_base::baud_rate(9600));
+        serial.set_option(boost::asio::serial_port_base::character_size(8));
+        serial.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
+        serial.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
     }
 
     /**
@@ -42,16 +45,23 @@ public:
         for(;;)
         {
             asio::read(serial,asio::buffer(&c,1));
+            std::cout << c << std::flush;
             switch(c)
             {
                 case '\r':
                     break;
                 case '\n':
+                    std::cout << std::endl;
                     return result;
                 default:
                     result+=c;
             }
         }
+    }
+
+    void Close()
+    {
+        serial.close();
     }
 
 private:
@@ -64,13 +74,12 @@ class SelCommands
 public:
     /**
      * Executes communication test. The same data as the command is transmitted back.
-     * \param data Any Letters (10 characters)
+     * \param data Any Letters (10 characters maximum)
      */
 
     std::string Test(const std::string& data) {
         std::string code = "TST";
         std::string cmd = inq_ + code + data + term_;
-        boost::asio::write(sp, boost::asio::buffer(cmd + "\n"));
         return cmd;
     }
 
@@ -80,8 +89,8 @@ public:
      * \param y home y axis
      * \param vel Parameter goes into effect when this is zero
      */
-    std::string Home(bool x, bool y, uint16_t vel){
-        std::string code = 'HOM';
+    std::string Home(bool x, bool y, uint16_t vel = 0){
+        std::string code = "HOM";
         std::string axis_pattern = '0' + std::to_string(x + y);
         std::string vel_str = std::to_string(vel);
 

@@ -1,26 +1,23 @@
 #include <iostream>
-#include <boost/asio.hpp>
-#include <sel_commands.h>
+#include "sel_commands.h"
 
 int main() {
     std::cout << "Starting up!" << std::endl;
-    boost::asio::io_service io;
-    boost::asio::serial_port sp(io, "COM3");
 
-    sp.set_option(serial_port_base::baud_rate(9600));
-    sp.set_option(serial_port_base::character_size(8));
-    sp.set_option(serial_port_base::parity(serial_port_base::parity::none));
-    sp.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
+    SimpleSerial serial_helper("COM3");
+    
+    SelCommands SelCommand;
+    auto cmd = SelCommand.Test("helloworld");
 
-    std::string command = SelCommands::Test("helloworld");
-    std::cout << "Command Sent: " << command << std::endl;
+    serial_helper.writeString(cmd);
 
-    char reply[128];
-    boost::asio::read(sp, boost::asio::buffer(reply, 128));
+    std::cout << "Command Sent: " << cmd << std::endl;
 
-    std::cout << "Response Received: " << reply << std::endl;
+    std::string resp = serial_helper.readLine();
 
-    sp.close();
+    std::cout << "Response Recieved: " << resp << std::endl;
+
+    serial_helper.Close();
 
     return 0;
 }
