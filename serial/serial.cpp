@@ -17,6 +17,13 @@ int main() {
 
     std::cout << "Response Recieved: " << resp << std::endl;
 
+    cmd = SelCommand.Home(true, true)
+    serial_helper.writeString(cmd);
+    std::cout << "Command Sent: " << cmd << std::endl;
+    std::string resp = serial_helper.readLine();
+
+    std::cout << "Response Recieved: " << resp << std::endl;
+
     serial_helper.Close();
 
     return 0;

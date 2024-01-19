@@ -89,17 +89,16 @@ public:
      * \param y home y axis
      * \param vel Parameter goes into effect when this is zero
      */
-    std::string Home(bool x, bool y, uint16_t vel = 0){
+    std::string Home(bool x, bool y, std::string vel = "00"){
         std::string code = "HOM";
-        std::string axis_pattern = '0' + std::to_string(x + y);
-        std::string vel_str = std::to_string(vel);
+        std::string axis_pattern = '0' + std::to_string(uint8_t(x) + 2*uint8_t(y));
 
-        std::string cmd = exec_ + code + axis_pattern + vel_str + term_;
+        std::string cmd = exec_ + code + axis_pattern + vel + term_;
         return cmd;
     }
 
 private:
     std::string exec_ = "!99";
     std::string inq_ = "?99";
-    std::string term_ = "@@";
+    std::string term_ = "@@\r\n";
 };
