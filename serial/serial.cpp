@@ -1,30 +1,51 @@
-#include <iostream>
-#include "sel_commands.h"
+#include "datastore.h"
+#include "logging.h"
+#include "signal_handler.h"
 
-int main() {
-    std::cout << "Starting up!" << std::endl;
+std::unique_ptr<SimpleSerial> SimpleSerial::instance_ = nullptr; // Initialize pointer to SimpleSerial singleton
 
-    SimpleSerial serial_helper("COM3");
-    
+int main(int argc, char* argv[]) {
+    COM_PORT = "COM3";
+    VERBOSE_LOGGING = false;
+    std::cout << "argc: " << std::to_string(argc) << std::endl;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "--verbose" || arg == "-v") {
+            VERBOSE_LOGGING = true;
+            continue;
+        }
+        COM_PORT = arg;
+    }
+
+    logv("Showing verbose logs");
+    logv("Using serial port " + COM_PORT);
+
     SelCommands SelCommand;
-    auto cmd = SelCommand.Test("helloworld");
 
-    serial_helper.writeString(cmd);
+    // Register signal handler to close serial port on ctrl+c
+    signal(SIGINT, signalHandler);
 
-    std::cout << "Command Sent: " << cmd << std::endl;
+    try {
+        Datastore DS;
 
-    std::string resp = serial_helper.readLine();
-
-    std::cout << "Response Recieved: " << resp << std::endl;
-
-    cmd = SelCommand.Home(true, true);
-    serial_helper.writeString(cmd);
-    std::cout << "Command Sent: " << cmd << std::endl;
-    resp = serial_helper.readLine();
-
-    std::cout << "Response Recieved: " << resp << std::endl;
-
-    serial_helper.Close();
+        SelCommand.Test("helloworld");
+        SelCommand.Home(true, true);
+        DS.Update();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
+        // TODO: Cancel motion
+        SelCommand.CloseSerial();
+        std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
+        throw;
+    }
+    catch (...) {
+        std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
+        // TODO: Cancel motion
+        SelCommand.CloseSerial();
+        std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
+        throw;
+    }
 
     return 0;
 }
