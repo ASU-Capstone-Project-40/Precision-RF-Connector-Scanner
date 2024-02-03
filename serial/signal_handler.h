@@ -3,15 +3,11 @@
 
 #include <iostream>
 #include <csignal>
-#include "sel_commands.h"
 
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received. Attempting to exit gracefully..." << std::endl;
 
-    SelCommands SelCommand;
-    // TODO: Send stop motion command
-
-    SelCommand.CloseSerial();
+    COM3.Close();
 
     std::cout << "Successfully closed the serial port." << std::endl;
 

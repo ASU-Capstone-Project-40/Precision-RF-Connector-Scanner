@@ -1,11 +1,13 @@
-#include "datastore.h"
-#include "logging.h"
-#include "signal_handler.h"
+#include "signal_handler.h" // Handles graceful shutdowns when ctrl+c is pressed
+#include "logging.h"        // Supports optional verbose logging
+#include "simple_serial.h"  // Handles serial communication
+#include "sel_commands.h"   // Defines SEL controller commands
+#include "datastore.h"      // Parses and stores system data for easy access
 
-std::unique_ptr<SimpleSerial> SimpleSerial::instance_ = nullptr; // Initialize pointer to SimpleSerial singleton
+SimpleSerial *COM3 = nullptr;
 
 int main(int argc, char* argv[]) {
-    COM_PORT = "COM3";
+    
     VERBOSE_LOGGING = false;
     std::cout << "argc: " << std::to_string(argc) << std::endl;
     for (int i = 1; i < argc; i++) {
@@ -14,35 +16,34 @@ int main(int argc, char* argv[]) {
             VERBOSE_LOGGING = true;
             continue;
         }
-        COM_PORT = arg;
+        else {
+            std::cout << "Ignoring unknown flag " << arg << std::endl;
+        }
     }
 
     logv("Showing verbose logs");
-    logv("Using serial port " + COM_PORT);
 
-    SelCommands SelCommand;
+    COM3 = new SimpleSerial("COM3", 9600)
 
-    // Register signal handler to close serial port on ctrl+c
+    // Register signal handler to close serial port when ctrl+c is pressed
     signal(SIGINT, signalHandler);
 
     try {
-        Datastore DS;
-
-        SelCommand.Test("helloworld");
-        SelCommand.Home(true, true);
-        DS.Update();
+        SelCommands::Test("helloworld", COM3);
+        SelCommands::Home(true, true, COM3);
+        DS::Update(COM3);
     }
     catch (const std::exception& e) {
         std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        SelCommand.CloseSerial();
+        COM3.Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }
     catch (...) {
         std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        SelCommand.CloseSerial();
+        COM3.Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }

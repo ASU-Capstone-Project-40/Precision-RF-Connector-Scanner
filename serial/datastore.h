@@ -6,16 +6,14 @@
 #include "sel_commands.h"
 #include "logging.h"
 
-class Datastore {
-public:
-    Datastore() = default;
+namespace Datastore {
 
-    SELMotor x_axis_;
-    SELMotor y_axis_;
-    uint8_t z_axis_ = 0;
+    SELMotor x_axis;
+    SELMotor y_axis;
+    uint8_t z_axis = 0;
 
-    bool Update() {
-        auto status_msg = SelCommand_.AxisInquiry();
+    bool Update(SimpleSerial serial_object) {
+        auto status_msg = SelCommands::AxisInquiry(serial_object);
         uint8_t num_axes = status_msg.at(6) - '0';
 
         if (num_axes < 1) {
@@ -27,20 +25,20 @@ public:
         uint8_t position_data_length = 9;
         uint8_t axis_data_length = 14;
 
-        x_axis_.enabled_ = status_msg.at(idx) == '1' ? true : false;
-        x_axis_.homed_ = status_msg.at(idx+1) == '1' ? true : false;
-        x_axis_.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
-        x_axis_.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
+        x_axis.enabled_ = status_msg.at(idx) == '1' ? true : false;
+        x_axis.homed_ = status_msg.at(idx+1) == '1' ? true : false;
+        x_axis.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
+        x_axis.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
         
         std::string pos_string = status_msg.substr(idx + 5, position_data_length);
-        x_axis_.position_ = std::stod(pos_string);
+        x_axis.position_ = std::stod(pos_string);
 
         logv( std::string("X Axis State:\r\n") +
-               "Enabled:    " + std::to_string(x_axis_.enabled_) + "\r\n" +
-               "Homed:      " + std::to_string(x_axis_.homed_) + "\r\n" +
-               "In motion:  " + std::to_string(x_axis_.in_motion_) + "\r\n" +
-               "Error code: " + x_axis_.error_code_ + "\r\n" +
-               "Position:   " + std::to_string(x_axis_.position_)
+               "Enabled:    " + std::to_string(x_axis.enabled_) + "\r\n" +
+               "Homed:      " + std::to_string(x_axis.homed_) + "\r\n" +
+               "In motion:  " + std::to_string(x_axis.in_motion_) + "\r\n" +
+               "Error code: " + x_axis.error_code_ + "\r\n" +
+               "Position:   " + std::to_string(x_axis.position_)
         );
 
         if (num_axes < 2) {
@@ -50,27 +48,24 @@ public:
 
         idx += axis_data_length;
 
-        y_axis_.enabled_ = status_msg.at(idx) == '1' ? true : false;
-        y_axis_.homed_ = status_msg.at(idx+1) == '1' ? true : false;
-        y_axis_.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
-        y_axis_.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
+        y_axis.enabled_ = status_msg.at(idx) == '1' ? true : false;
+        y_axis.homed_ = status_msg.at(idx+1) == '1' ? true : false;
+        y_axis.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
+        y_axis.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
         
         pos_string = status_msg.substr(idx + 5, position_data_length);
-        y_axis_.position_ = std::stod(pos_string);
+        y_axis.position_ = std::stod(pos_string);
 
         logv(  std::string("Y Axis State:\r\n") +
-               "Enabled:    " + std::to_string(y_axis_.enabled_) + "\r\n" +
-               "Homed:      " + std::to_string(y_axis_.homed_) + "\r\n" +
-               "In motion:  " + std::to_string(y_axis_.in_motion_) + "\r\n" +
-               "Error code: " + y_axis_.error_code_ + "\r\n" +
-               "Position:   " + std::to_string(y_axis_.position_)
+               "Enabled:    " + std::to_string(y_axis.enabled_) + "\r\n" +
+               "Homed:      " + std::to_string(y_axis.homed_) + "\r\n" +
+               "In motion:  " + std::to_string(y_axis.in_motion_) + "\r\n" +
+               "Error code: " + y_axis.error_code_ + "\r\n" +
+               "Position:   " + std::to_string(y_axis.position_)
         );
 
         return true;
     }
-
-private:
-    SelCommands SelCommand_;
 };
 
 #endif // DATASTORE_H
