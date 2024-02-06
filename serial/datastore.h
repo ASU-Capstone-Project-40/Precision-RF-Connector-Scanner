@@ -1,4 +1,3 @@
-// Datastore.h
 #ifndef DATASTORE_H
 #define DATASTORE_H
 
@@ -6,13 +5,34 @@
 #include "sel_commands.h"
 #include "logging.h"
 
-namespace Datastore {
 
+class SELMotor {
+public:
+    SELMotor() = default;
+
+    bool enabled_{false};
+    bool homed_{false};
+    bool in_motion_{false};
+    std::string error_code_{""};
+    double position_{0.0};
+};
+
+class Datastore {
+public:
     SELMotor x_axis;
     SELMotor y_axis;
+    uint16_t SEL_velocity = 100; // mm/s
     uint8_t z_axis = 0;
 
-    bool Update(SimpleSerial serial_object) {
+    Datastore(const Datastore&) = delete;
+    Datastore& operator=(const Datastore&) = delete;
+
+    static Datastore& getInstance() {
+        static Datastore instance;
+        return instance;
+    }
+
+    bool Update(SimpleSerial* serial_object) {
         auto status_msg = SelCommands::AxisInquiry(serial_object);
         uint8_t num_axes = status_msg.at(6) - '0';
 
@@ -66,6 +86,10 @@ namespace Datastore {
 
         return true;
     }
+
+private:
+    Datastore() = default;
 };
+
 
 #endif // DATASTORE_H

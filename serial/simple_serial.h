@@ -76,6 +76,9 @@ public:
 private:
     boost::asio::io_service io;
     boost::asio::serial_port serial;
+    std::string port;
 };
+
+extern SimpleSerial* COM3;
 
 #endif // SIMPLE_SERIAL_H

@@ -23,27 +23,28 @@ int main(int argc, char* argv[]) {
 
     logv("Showing verbose logs");
 
-    COM3 = new SimpleSerial("COM3", 9600)
+    COM3 = new SimpleSerial("COM3", 9600);
 
     // Register signal handler to close serial port when ctrl+c is pressed
     signal(SIGINT, signalHandler);
 
     try {
+        auto& DS = Datastore::getInstance();
         SelCommands::Test("helloworld", COM3);
         SelCommands::Home(true, true, COM3);
-        DS::Update(COM3);
+        DS.Update(COM3);
     }
     catch (const std::exception& e) {
         std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        COM3.Close();
+        COM3->Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }
     catch (...) {
         std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        COM3.Close();
+        COM3->Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }

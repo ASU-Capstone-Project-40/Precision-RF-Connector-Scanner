@@ -1,15 +1,26 @@
-#include <iostream>
-#include "sel_commands.h"
+#include "sel_commands.h"   // Defines SEL controller commands
 
 int main()
 {
-    SelCommands SelCommand;
+    VERBOSE_LOGGING = true;
 
-    auto cmd = SelCommand.Home(true, true);
-    std::cout << "Home Command: " << cmd << std::endl;
+    // Test SelCommands::formatValue
+        double a = 123.4;
+        float b = 12.345;
+        int c = 148;
+        std::string d = "helloworld";
 
-    cmd = SelCommand.Test("helloworld");
-    std::cout << "Test Command: " << cmd << std::endl;
-    
+        SelCommands::formatValue<double>(a, 8, 2);
+        SelCommands::formatValue<float>(b, 8, 2);
+        SelCommands::formatValue<int>(c, 4, 0);
+
+        try {
+        SelCommands::formatValue<double>(a, 2, 1);
+        }
+
+        catch (std::runtime_error) {
+            logv("Task failed successfully!");
+        }
+
     return 0;
 }
