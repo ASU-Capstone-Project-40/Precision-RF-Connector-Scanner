@@ -63,7 +63,7 @@ namespace SelCommands
     */
     std::string AxisInquiry() {
         std::string code = "STA";
-        std::string cmd = inq + code + SelCommands::term;
+        std::string cmd = inq + code + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         return resp;
@@ -84,7 +84,7 @@ namespace SelCommands
     std::string Home(bool x, bool y) {
         std::string code = "HOM";
         std::string axis_pattern = "0" + std::to_string(uint8_t(x) + 2*uint8_t(y));
-        std::string cmd = exec + code + axis_pattern + "00" + SelCommands::term;
+        std::string cmd = exec + code + axis_pattern + "00" + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         return resp;
@@ -120,7 +120,7 @@ namespace SelCommands
             cmd += axis_position;
         }
 
-        cmd += SelCommands::term;
+        cmd += term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         return resp;
