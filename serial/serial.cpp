@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
 
     try {
         auto& DS = Datastore::getInstance();
-        SelCommands::Test("helloworld", SEL);
-        SelCommands::Home(true, true, SEL);
-        DS.Update(SEL);
-        SelCommands::MoveToPosition({100.0, 200.0}, SEL);
+        SelCommands::Test("helloworld");
+        SelCommands::Home(true, true);
+        DS.Update();
+        SelCommands::MoveToPosition({100.0, 200.0});
         SEL->Close();
         logv("All done!");
     }

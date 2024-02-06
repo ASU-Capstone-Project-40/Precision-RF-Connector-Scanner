@@ -32,8 +32,8 @@ public:
         return instance;
     }
 
-    bool Update(SimpleSerial* serial_object) {
-        auto status_msg = SelCommands::AxisInquiry(serial_object);
+    bool Update() {
+        auto status_msg = SelCommands::AxisInquiry();
         uint8_t num_axes = status_msg.at(6) - '0';
 
         if (num_axes < 1) {
