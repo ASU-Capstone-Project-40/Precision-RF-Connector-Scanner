@@ -8,7 +8,7 @@
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received. Attempting to exit gracefully..." << std::endl;
 
-    COM3->Close();
+    SEL->Close();
 
     std::cout << "Successfully closed the serial port." << std::endl;
 

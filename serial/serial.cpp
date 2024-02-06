@@ -4,11 +4,12 @@
 #include "sel_commands.h"   // Defines SEL controller commands
 #include "datastore.h"      // Parses and stores system data for easy access
 
-SimpleSerial *COM3 = nullptr;
+SimpleSerial *SEL = nullptr;
 
 int main(int argc, char* argv[]) {
     
     VERBOSE_LOGGING = false;
+    std::string sel_port = "COM3";
     std::cout << "argc: " << std::to_string(argc) << std::endl;
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -17,34 +18,37 @@ int main(int argc, char* argv[]) {
             continue;
         }
         else {
-            std::cout << "Ignoring unknown flag " << arg << std::endl;
+            sel_port = arg;
         }
     }
 
     logv("Showing verbose logs");
 
-    COM3 = new SimpleSerial("COM3", 9600);
+    SEL = new SimpleSerial(sel_port, 9600);
 
     // Register signal handler to close serial port when ctrl+c is pressed
     signal(SIGINT, signalHandler);
 
     try {
         auto& DS = Datastore::getInstance();
-        SelCommands::Test("helloworld", COM3);
-        SelCommands::Home(true, true, COM3);
-        DS.Update(COM3);
+        SelCommands::Test("helloworld", SEL);
+        SelCommands::Home(true, true, SEL);
+        DS.Update(SEL);
+        SelCommands::MoveToPosition({100.0, 200.0}, SEL);
+        SEL->Close();
+        logv("All done!");
     }
     catch (const std::exception& e) {
         std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        COM3->Close();
+        SEL->Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }
     catch (...) {
         std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
         // TODO: Cancel motion
-        COM3->Close();
+        SEL->Close();
         std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
         throw;
     }

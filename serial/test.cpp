@@ -8,7 +8,6 @@ int main()
         double a = 123.4;
         float b = 12.345;
         int c = 148;
-        std::string d = "helloworld";
 
         SelCommands::formatValue<double>(a, 8, 2);
         SelCommands::formatValue<float>(b, 8, 2);
