@@ -10,7 +10,6 @@ int main(int argc, char* argv[]) {
     
     VERBOSE_LOGGING = false;
     std::string sel_port = "COM3";
-    std::cout << "argc: " << std::to_string(argc) << std::endl;
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "--verbose" || arg == "-v") {
@@ -24,6 +23,7 @@ int main(int argc, char* argv[]) {
 
     logv("Showing verbose logs");
 
+    logv("Opening new serial connection on " + sel_port + " at rate " + std::to_string(9600)); // TODO: Make this part of the SimpleSerial constructor
     SEL = new SimpleSerial(sel_port, 9600);
 
     // Register signal handler to close serial port when ctrl+c is pressed

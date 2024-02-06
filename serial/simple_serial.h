@@ -11,14 +11,13 @@ public:
     /**
      * Constructor.
      * \param port device name, example "/dev/ttyUSB0" or "COM4"
-     * \param baud_rate communication speed, e  xample 9600 or 115200
+     * \param baud_rate communication speed, example 9600 or 115200
      * \throws boost::system::system_error if cannot open the
      * serial device
      */
     SimpleSerial(std::string port, uint32_t baud_rate)
     : io(), serial(io,port)
     {
-        logv("Opening new serial connection on " + port + " at rate " + std::to_string(baud_rate));
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
         serial.set_option(boost::asio::serial_port_base::character_size(8));
         serial.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));

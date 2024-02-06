@@ -112,9 +112,9 @@ namespace SelCommands
             return "";
         }
         
-        std::string axis_pattern_string = formatValue<uint8_t>(axis_pattern, 2, 0);
+        std::string axis_pattern_string = "0" + std::to_string(axis_pattern); // TODO: formatValue(3, 2, 0) doesn't work (0♥)?
         
-        std::string cmd = inq + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity "0100" a param
+        std::string cmd = exec + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity "0100" a param
 
         for (auto& axis_position : axis_positions) {
             cmd += axis_position;
