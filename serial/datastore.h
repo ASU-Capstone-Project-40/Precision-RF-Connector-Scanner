@@ -84,7 +84,22 @@ public:
                "Position:   " + std::to_string(y_axis.position_)
         );
 
+        if (x_axis.error_code_ != "00") {
+            throw std::runtime_error("X axis encountered error " + x_axis.error_code_);
+        }
+
+        if (y_axis.error_code_ != "00") {
+            throw std::runtime_error("Y axis encountered error " + y_axis.error_code_);
+        }
+
         return true;
+    }
+
+    void waitForMotionComplete() {
+        Update();
+        while(x_axis.in_motion_ || y_axis.in_motion_) {
+            Update();
+        }
     }
 
 private:

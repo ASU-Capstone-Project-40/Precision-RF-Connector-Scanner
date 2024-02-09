@@ -77,14 +77,16 @@ namespace SelCommands
 
     /**
      * Initiates homing sequence. Servo ON function also included.
-     * \param x home x axis
-     * \param y home y axis
-     * \param vel Integer number represented as a two character string
+     * \param x_axis home x axis
+     * \param y_axis home y axis
+     * Example command: !99HOM0300@@
+     * Example response: #99HOM@@
      */
-    std::string Home(bool x, bool y) {
+    std::string Home(bool x_axis, bool y_axis) {
         std::string code = "HOM";
-        std::string axis_pattern = "0" + std::to_string(uint8_t(x) + 2*uint8_t(y));
-        std::string cmd = exec + code + axis_pattern + "00" + term;
+        uint16_t axis_pattern = static_cast<uint8_t>(x_axis) + 2 * static_cast<uint8_t>(y_axis);
+        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
+        std::string cmd = exec + code + axis_pattern_string + "00" + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         return resp;
@@ -125,6 +127,33 @@ namespace SelCommands
         std::string resp = SEL->readLine();
         return resp;
     }
+
+    /**
+     * Slows the axis to a stop specified by the axis pattern.
+     * Note: Do not use the Halt protocol command during homing.
+     * \param x_axis Stop the x axis
+     * \param y_axis Stop the y axis
+     * Example command: !99HLT03@@
+     * Example response:  #99HLT@@
+     */ 
+    std::string Halt(bool x_axis, bool y_axis) {
+        std::string code = "HLT";
+        uint16_t axis_pattern = static_cast<uint8_t>(x_axis) + 2 * static_cast<uint8_t>(y_axis);
+        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
+        std::string cmd = exec + code + axis_pattern_string + term;
+        SEL->writeString(cmd);
+        std::string resp = SEL->readLine();
+        return resp;
+    }
+
+    void HaltAll() {
+        logv("SelCommands::HaltAll: Halting all axes");
+        std::string resp = Halt(true, true);
+        if (resp !=  "#99HLT@@") {
+            std::cout << "SelCommands::HaltAll: Unexpected response: " << resp << std::endl;
+        }
+        logv("SelCommands::HaltAll: Success");
+    }   
 };
 
 #endif // SEL_COMMANDS_H

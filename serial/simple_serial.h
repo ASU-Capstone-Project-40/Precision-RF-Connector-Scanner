@@ -69,8 +69,9 @@ public:
 
     void Close()
     {
-        logv("Closing serial port on " + port);
+        logv("SimpleSerial::Close: Closing serial port on " + port);
         serial.close();
+        logv("SimpleSerial::Close: Success");
     }
 
 private:

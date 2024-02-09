@@ -3,14 +3,14 @@
 
 #include <iostream>
 #include <csignal>
-#include "simple_serial.h"
+#include "simple_serial.h" 
+#include "sel_commands.h"
 
 void signalHandler(int signum) {
-    std::cout << "Interrupt signal (" << signum << ") received. Attempting to exit gracefully..." << std::endl;
+    std::cout << "Interrupt signal (" << signum << ") received. Exiting gracefully..." << std::endl;
 
+    SelCommands::HaltAll();
     SEL->Close();
-
-    std::cout << "Successfully closed the serial port." << std::endl;
 
     exit(signum);
 }

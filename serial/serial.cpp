@@ -51,16 +51,16 @@ int main(int argc, char* argv[]) {
     }
     catch (const std::exception& e) {
         std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
-        // TODO: Cancel motion
+        SelCommands::HaltAll();
         SEL->Close();
-        std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
+        std::cerr << "Re-throwing the error.";
         throw;
     }
     catch (...) {
         std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
-        // TODO: Cancel motion
+        SelCommands::HaltAll();
         SEL->Close();
-        std::cerr << "Successfully closed the serial port. Now re-throwing the error.";
+        std::cerr << "Re-throwing the error.";
         throw;
     }
 
