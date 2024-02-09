@@ -16,7 +16,7 @@ public:
      * serial device
      */
     SimpleSerial(std::string port, uint32_t baud_rate)
-    : io(), serial(io,port)
+    : io(), serial(io,port), port(port)
     {
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
         serial.set_option(boost::asio::serial_port_base::character_size(8));

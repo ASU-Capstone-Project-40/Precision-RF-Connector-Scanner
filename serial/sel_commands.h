@@ -20,9 +20,9 @@ namespace SelCommands
      * Example output: "00123.40"
      */
     template <typename T>
-    std::string formatValue(T value, uint8_t length, uint8_t precision) {
-        logv("SelCommands::formatValue: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
-
+    std::string toPaddedString(T value, uint8_t length, uint8_t precision) {
+        logv("SelCommands::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
+    
         if (value < 0) {
             throw std::runtime_error("SelCommands::formatValue: value " + std::to_string(value) + " must not be negative");
         }
@@ -32,10 +32,10 @@ namespace SelCommands
         std::string result = stream.str();
         
         if (result.length() > length) {
-            throw std::runtime_error("SelCommands::formatValue: value " + std::to_string(value) + " is too large to convert into this format");
+            throw std::runtime_error("SelCommands::toPaddedString: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        logv("SelCommands::formatValue: Successfully converted value: " + result);
+        logv("SelCommands::toPaddedString: Successfully converted value: " + result);
         return result;
     }
             /******************************************************
@@ -98,12 +98,12 @@ namespace SelCommands
      */
     std::string MoveToPosition(std::vector<double> joint_state) {
         std::string code = "MOV";
-        uint8_t axis_pattern = 0;
+        uint16_t axis_pattern = 0;
         std::vector<std::string> axis_positions;
         for (size_t i = 0; i < joint_state.size(); i++) {
             if (joint_state[i] >= 0) {
                 axis_pattern += static_cast<uint8_t>(std::pow(2, i));
-                axis_positions.push_back(formatValue<double>(joint_state[i], 8, 2));
+                axis_positions.push_back(toPaddedString<double>(joint_state[i], 8, 2));
             }
         }
 
@@ -112,9 +112,9 @@ namespace SelCommands
             return "";
         }
         
-        std::string axis_pattern_string = "0" + std::to_string(axis_pattern); // TODO: formatValue(3, 2, 0) doesn't work (0♥)?
+        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
         
-        std::string cmd = exec + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity "0100" a param
+        std::string cmd = exec + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity a param instead of hard-coded
 
         for (auto& axis_position : axis_positions) {
             cmd += axis_position;

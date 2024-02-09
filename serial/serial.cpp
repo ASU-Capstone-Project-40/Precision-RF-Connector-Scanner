@@ -34,7 +34,18 @@ int main(int argc, char* argv[]) {
         SelCommands::Test("helloworld");
         SelCommands::Home(true, true);
         DS.Update();
+
+        while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+            DS.Update();
+        }
+
         SelCommands::MoveToPosition({100.0, 200.0});
+        DS.Update();
+
+        while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+            DS.Update();
+        }
+        
         SEL->Close();
         logv("All done!");
     }
