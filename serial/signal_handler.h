@@ -4,12 +4,12 @@
 #include <iostream>
 #include <csignal>
 #include "simple_serial.h" 
-#include "sel_commands.h"
+#include "sel_interface.h"
 
 void signalHandler(int signum) {
     std::cout << "Interrupt signal (" << signum << ") received. Exiting gracefully..." << std::endl;
 
-    SelCommands::HaltAll();
+    SEL_Interface::HaltAll();
     SEL->Close();
 
     exit(signum);

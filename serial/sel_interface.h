@@ -1,12 +1,23 @@
-#ifndef SEL_COMMANDS_H
-#define SEL_COMMANDS_H
+#ifndef SEL_INTERFACE_H
+#define SEL_INTERFACE_H
 
 #include "simple_serial.h"
 #include <sstream>
 #include <iomanip>
 
-namespace SelCommands
+namespace SEL_Interface
 {
+    enum Axis {
+        X = 1,
+        Y = 2,
+        XY = 3
+    };
+
+    enum Direction {
+        NEGATIVE = 0,
+        POSITIVE = 1
+    };
+    
     static std::string exec = "!99";
     static std::string inq = "?99";
     static std::string term = "@@\r\n";
@@ -21,10 +32,10 @@ namespace SelCommands
      */
     template <typename T>
     std::string toPaddedString(T value, uint8_t length, uint8_t precision) {
-        logv("SelCommands::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
+        logv("SEL_Interface::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
     
         if (value < 0) {
-            throw std::runtime_error("SelCommands::formatValue: value " + std::to_string(value) + " must not be negative");
+            throw std::runtime_error("SEL_Interface::formatValue: value " + std::to_string(value) + " must not be negative");
         }
 
         std::ostringstream stream;
@@ -32,10 +43,10 @@ namespace SelCommands
         std::string result = stream.str();
         
         if (result.length() > length) {
-            throw std::runtime_error("SelCommands::toPaddedString: value " + std::to_string(value) + " is too large to convert into this format");
+            throw std::runtime_error("SEL_Interface::toPaddedString: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        logv("SelCommands::toPaddedString: Successfully converted value: " + result);
+        logv("SEL_Interface::toPaddedString: Successfully converted value: " + result);
         return result;
     }
             /******************************************************
@@ -44,13 +55,17 @@ namespace SelCommands
 
     /**
      * Executes communication test. The same characters as the command is transmitted back.
-     * \param data Any Letters (10 characters maximum)
+     * \param text Any Letters (10 characters maximum)
      * Example command: ?99TST0123456789@@
      * Example response: #99TST0123456789@@
      */
-    std::string Test(const std::string& data) {
+    std::string Test(const std::string& text) {
+        if (text.length() > 10) {
+            std::cout << "SEL_Interface::Test: Max text length is 10 characters" << std::endl;
+            return "";
+        }
         std::string code = "TST";
-        std::string cmd = inq + code + data + term;
+        std::string cmd = inq + code + text + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         return resp;
@@ -77,15 +92,13 @@ namespace SelCommands
 
     /**
      * Initiates homing sequence. Servo ON function also included.
-     * \param x_axis home x axis
-     * \param y_axis home y axis
+     * \param axis Axis or axes to home.
      * Example command: !99HOM0300@@
      * Example response: #99HOM@@
      */
-    std::string Home(bool x_axis, bool y_axis) {
+    std::string Home(int axis) {
         std::string code = "HOM";
-        uint16_t axis_pattern = static_cast<uint8_t>(x_axis) + 2 * static_cast<uint8_t>(y_axis);
-        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
+        std::string axis_pattern_string = toPaddedString<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + "00" + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
@@ -131,29 +144,55 @@ namespace SelCommands
     /**
      * Slows the axis to a stop specified by the axis pattern.
      * Note: Do not use the Halt protocol command during homing.
-     * \param x_axis Stop the x axis
-     * \param y_axis Stop the y axis
+     * \param axis Axis or axes to halt
      * Example command: !99HLT03@@
      * Example response:  #99HLT@@
      */ 
-    std::string Halt(bool x_axis, bool y_axis) {
+    std::string Halt(int axis) {
         std::string code = "HLT";
-        uint16_t axis_pattern = static_cast<uint8_t>(x_axis) + 2 * static_cast<uint8_t>(y_axis);
-        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
+        std::string axis_pattern_string = toPaddedString<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
+        if (resp !=  "#99HLT@@") {
+            std::cout << "SEL_Interface::Halt: Expected response #99HLT@@, recieved " << resp << std::endl;
+        }
         return resp;
     }
 
+    
+    /**
+     * Stops X and Y axes.
+    */
     void HaltAll() {
-        logv("SelCommands::HaltAll: Halting all axes");
-        std::string resp = Halt(true, true);
-        if (resp !=  "#99HLT@@") {
-            std::cout << "SelCommands::HaltAll: Unexpected response: " << resp << std::endl;
+        logv("SEL_Interface::HaltAll: Halting all axes");
+        Halt(Axis::XY);
+        logv("SEL_Interface::HaltAll: Success");
+    }
+
+    /**
+     * Executes Jog move. When there is no deceleration stop command, it stops at the soft limit.
+     * \param axis Axis or axes to jog. Use SEL_Interface::Axis
+     * \param direction The direction to jog. Use SEL_Interface::Direction
+     * \param velocity Jog velocity in mm/sec. Defaults to 50
+     * \param acceleration Jog acceleration in 1/100g. Defaults to 0.3
+     * Example command: !99JOG030.3000501@@
+     * Example response: #99JOG@@
+    */
+    std::string Jog(int axis, int direction, uint16_t velocity = 50, double acceleration = 0.3) {
+        std::string code = "JOG";
+        std::string axis_pattern = toPaddedString<int>(axis, 2, 0);
+        std::string acceleration_string = toPaddedString<double>(acceleration, 4, 2);
+        std::string velocity_string = toPaddedString<int16_t>(std::abs(velocity), 4, 0);
+        std::string direction_string = std::to_string(direction);
+        std::string cmd = exec + code + axis_pattern + acceleration_string + velocity_string + direction_string + term;
+        SEL->writeString(cmd);
+        std::string resp = SEL->readLine();
+        if (resp !=  "#99JOG@@") {
+            std::cout << "SEL_Interface::Halt: Expected response #99JOG@@, recieved " << resp << std::endl;
         }
-        logv("SelCommands::HaltAll: Success");
+        return resp;
     }   
 };
 
-#endif // SEL_COMMANDS_H
+#endif // SEL_INTERFACE_H

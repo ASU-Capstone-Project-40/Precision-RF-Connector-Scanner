@@ -2,7 +2,7 @@
 #define DATASTORE_H
 
 #include <string>
-#include "sel_commands.h"
+#include "sel_interface.h"
 #include "logging.h"
 
 
@@ -33,7 +33,7 @@ public:
     }
 
     bool Update() {
-        auto status_msg = SelCommands::AxisInquiry();
+        auto status_msg = SEL_Interface::AxisInquiry();
         uint8_t num_axes = status_msg.at(6) - '0';
 
         if (num_axes < 1) {

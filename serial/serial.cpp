@@ -1,7 +1,7 @@
 #include "signal_handler.h" // Handles graceful shutdowns when ctrl+c is pressed
 #include "logging.h"        // Supports optional verbose logging
 #include "simple_serial.h"  // Handles serial communication
-#include "sel_commands.h"   // Defines SEL controller commands
+#include "sel_interface.h"   // Defines SEL controller commands
 #include "datastore.h"      // Parses and stores system data for easy access
 
 SimpleSerial *SEL = nullptr;
@@ -31,36 +31,40 @@ int main(int argc, char* argv[]) {
 
     try {
         auto& DS = Datastore::getInstance();
-        SelCommands::Test("helloworld");
-        SelCommands::Home(true, true);
+        SEL_Interface::Test("helloworld");
+        SEL_Interface::Home(SEL_Interface::Axis::XY);
         DS.Update();
 
         while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
             DS.Update();
         }
 
-        SelCommands::MoveToPosition({100.0, 200.0});
+        SEL_Interface::MoveToPosition({100.0, 200.0});
         DS.Update();
 
-        while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
-            DS.Update();
-        }
+        DS.waitForMotionComplete();
+
+        SEL_Interface::Jog(SEL_Interface::Axis::XY, SEL_Interface::Direction::NEGATIVE);
+
+        DS.waitForMotionComplete();
         
         SEL->Close();
         logv("All done!");
     }
+
     catch (const std::exception& e) {
-        std::cerr << "Exception caught. " << std::string(e.what()) << " Attempting to exit gracefully." << std::endl;
-        SelCommands::HaltAll();
+        std::cerr << "Exception caught. " << std::string(e.what()) << "\n Attempting to exit gracefully." << std::endl;
+        SEL_Interface::HaltAll();
         SEL->Close();
-        std::cerr << "Re-throwing the error.";
+        std::cerr << "Shutdown complete, re-throwing the error.";
         throw;
     }
+
     catch (...) {
         std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
-        SelCommands::HaltAll();
+        SEL_Interface::HaltAll();
         SEL->Close();
-        std::cerr << "Re-throwing the error.";
+        std::cerr << "Shutdown complete, re-throwing the error.";
         throw;
     }
 
