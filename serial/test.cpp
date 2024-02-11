@@ -4,7 +4,7 @@ SimpleSerial *SEL = nullptr;
 
 int main()
 {
-    VERBOSE_LOGGING = true;
+    Logger::setLogLevel("debug");
 
     // Test SEL_Interface::toPaddedString
         double a = 123.4;
@@ -22,7 +22,7 @@ int main()
         }
 
         catch (std::runtime_error) {
-            logv("Task failed successfully!");
+            Logger::info("Task failed successfully!");
         }
 
     return 0;

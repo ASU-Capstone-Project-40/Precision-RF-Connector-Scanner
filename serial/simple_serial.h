@@ -31,7 +31,7 @@ public:
      */
     void writeString(std::string s)
     {
-        logv("Sending: " + s);
+        Logger::debug("Sending: " + s);
         boost::asio::write(serial,boost::asio::buffer(s.c_str(),s.size()));
     }
 
@@ -43,7 +43,7 @@ public:
      */
     std::string readLine()
     {
-        logv("Receiving: ");
+        Logger::debug("Receiving: ");
         //Reading data char by char, code is optimized for simplicity, not speed
         using namespace boost;
         char c;
@@ -51,15 +51,14 @@ public:
         for(;;)
         {
             asio::read(serial,asio::buffer(&c,1));
-            if (VERBOSE_LOGGING) {
-                std::cout << c << std::flush;
-            }
+            Logger::debug_stream(c);
+
             switch(c)
             {
                 case '\r':
                     break;
                 case '\n':
-                    logv(""); // Sends an end line since the above std::flush does not
+                    Logger::debug(""); // Send an end line since the above debug_stream does not
                     return result;
                 default:
                     result+=c;
@@ -69,9 +68,9 @@ public:
 
     void Close()
     {
-        logv("SimpleSerial::Close: Closing serial port on " + port);
+        Logger::info("SimpleSerial::Close: Closing serial port on " + port);
         serial.close();
-        logv("SimpleSerial::Close: Success");
+        Logger::debug("SimpleSerial::Close: Success");
     }
 
 private:

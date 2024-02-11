@@ -7,7 +7,7 @@
 #include "sel_interface.h"
 
 void signalHandler(int signum) {
-    std::cout << "Interrupt signal (" << signum << ") received. Exiting gracefully..." << std::endl;
+    Logger::warn("Interrupt signal '" + std::to_string(signum) + "' received. Exiting gracefully...");
 
     SEL_Interface::HaltAll();
     SEL->Close();

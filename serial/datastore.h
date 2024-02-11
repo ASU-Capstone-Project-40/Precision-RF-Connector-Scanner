@@ -37,7 +37,7 @@ public:
         uint8_t num_axes = status_msg.at(6) - '0';
 
         if (num_axes < 1) {
-            std::cout << "Error: No axes detected." << std::endl;
+            Logger::error("Datastore::Update: No axes detected.");
             return false;
         }
 
@@ -53,16 +53,16 @@ public:
         std::string pos_string = status_msg.substr(idx + 5, position_data_length);
         x_axis.position_ = std::stod(pos_string);
 
-        logv( std::string("X Axis State:\r\n") +
-               "Enabled:    " + std::to_string(x_axis.enabled_) + "\r\n" +
-               "Homed:      " + std::to_string(x_axis.homed_) + "\r\n" +
-               "In motion:  " + std::to_string(x_axis.in_motion_) + "\r\n" +
-               "Error code: " + x_axis.error_code_ + "\r\n" +
-               "Position:   " + std::to_string(x_axis.position_)
+        Logger::debug(std::string("X Axis State:\r\n") +
+                                  "Enabled:    " + std::to_string(x_axis.enabled_) + "\r\n" +
+                                  "Homed:      " + std::to_string(x_axis.homed_) + "\r\n" +
+                                  "In motion:  " + std::to_string(x_axis.in_motion_) + "\r\n" +
+                                  "Error code: " + x_axis.error_code_ + "\r\n" +
+                                  "Position:   " + std::to_string(x_axis.position_)
         );
 
         if (num_axes < 2) {
-            std::cout << "Error: y-axis not detected." << std::endl;
+            Logger::error("Error: y-axis not detected.");
             return false;
         }
 
@@ -76,12 +76,12 @@ public:
         pos_string = status_msg.substr(idx + 5, position_data_length);
         y_axis.position_ = std::stod(pos_string);
 
-        logv(  std::string("Y Axis State:\r\n") +
-               "Enabled:    " + std::to_string(y_axis.enabled_) + "\r\n" +
-               "Homed:      " + std::to_string(y_axis.homed_) + "\r\n" +
-               "In motion:  " + std::to_string(y_axis.in_motion_) + "\r\n" +
-               "Error code: " + y_axis.error_code_ + "\r\n" +
-               "Position:   " + std::to_string(y_axis.position_)
+        Logger::debug(std::string("Y Axis State:\r\n") +
+                                  "Enabled:    " + std::to_string(y_axis.enabled_) + "\r\n" +
+                                  "Homed:      " + std::to_string(y_axis.homed_) + "\r\n" +
+                                  "In motion:  " + std::to_string(y_axis.in_motion_) + "\r\n" +
+                                  "Error code: " + y_axis.error_code_ + "\r\n" +
+                                  "Position:   " + std::to_string(y_axis.position_)
         );
 
         if (x_axis.error_code_ != "00") {

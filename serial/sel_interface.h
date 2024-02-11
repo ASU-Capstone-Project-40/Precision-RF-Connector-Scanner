@@ -32,7 +32,7 @@ namespace SEL_Interface
      */
     template <typename T>
     std::string toPaddedString(T value, uint8_t length, uint8_t precision) {
-        logv("SEL_Interface::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
+        Logger::debug("SEL_Interface::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
     
         if (value < 0) {
             throw std::runtime_error("SEL_Interface::formatValue: value " + std::to_string(value) + " must not be negative");
@@ -46,7 +46,7 @@ namespace SEL_Interface
             throw std::runtime_error("SEL_Interface::toPaddedString: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        logv("SEL_Interface::toPaddedString: Successfully converted value: " + result);
+        Logger::debug("SEL_Interface::toPaddedString: Successfully converted value: " + result);
         return result;
     }
             /******************************************************
@@ -61,7 +61,7 @@ namespace SEL_Interface
      */
     std::string Test(const std::string& text) {
         if (text.length() > 10) {
-            std::cout << "SEL_Interface::Test: Max text length is 10 characters" << std::endl;
+            Logger::error("SEL_Interface::Test: Max text length is 10 characters");
             return "";
         }
         std::string code = "TST";
@@ -123,7 +123,7 @@ namespace SEL_Interface
         }
 
         if (axis_positions.size() < 1) {
-            std::cout << "MoveToPosition error: No axes commanded." << std::endl;
+            Logger::error("SEL_Interface::MoveToPosition: No axes commanded.");
             return "";
         }
         
@@ -155,7 +155,7 @@ namespace SEL_Interface
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         if (resp !=  "#99HLT@@") {
-            std::cout << "SEL_Interface::Halt: Expected response #99HLT@@, recieved " << resp << std::endl;
+            Logger::warn("SEL_Interface::Halt: Expected response #99HLT@@, recieved " + resp);
         }
         return resp;
     }
@@ -165,9 +165,9 @@ namespace SEL_Interface
      * Stops X and Y axes.
     */
     void HaltAll() {
-        logv("SEL_Interface::HaltAll: Halting all axes");
+        Logger::info("SEL_Interface::HaltAll: Halting all axes");
         Halt(Axis::XY);
-        logv("SEL_Interface::HaltAll: Success");
+        Logger::debug("SEL_Interface::HaltAll: Success");
     }
 
     /**
@@ -189,7 +189,7 @@ namespace SEL_Interface
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         if (resp !=  "#99JOG@@") {
-            std::cout << "SEL_Interface::Halt: Expected response #99JOG@@, recieved " << resp << std::endl;
+            Logger::warn("SEL_Interface::Halt: Expected response #99JOG@@, recieved " + resp);
         }
         return resp;
     }   

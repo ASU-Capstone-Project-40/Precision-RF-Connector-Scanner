@@ -5,25 +5,34 @@
 #include "datastore.h"      // Parses and stores system data for easy access
 
 SimpleSerial *SEL = nullptr;
+int Logger::log_level_ = Logger::Level::INFO;
 
 int main(int argc, char* argv[]) {
     
-    VERBOSE_LOGGING = false;
     std::string sel_port = "COM3";
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
-        if (arg == "--verbose" || arg == "-v") {
-            VERBOSE_LOGGING = true;
+        if (arg == "--log_level" || arg == "-log") {
+            if (argc < i+1) {
+                Logger::warn(arg + " flag provided but no value specified. Using default log level.");
+                continue;
+            }
+            Logger::setLogLevel((argv[i+1]));
+            i++;
             continue;
         }
-        else {
-            sel_port = arg;
+        else if (arg == "--sel_port" || arg == "-port") {
+            if (argc < i+1) {
+                Logger::warn(arg + " flag provided but no value specified. Using default log level.");
+                continue;
+            }
+            sel_port = argv[i+1];
+            i++;
+            continue;
         }
     }
 
-    logv("Showing verbose logs");
-
-    logv("Opening new serial connection on " + sel_port + " at rate " + std::to_string(9600)); // TODO: Make this part of the SimpleSerial constructor
+    Logger::info("Opening new serial connection on " + sel_port + " at rate " + std::to_string(9600));
     SEL = new SimpleSerial(sel_port, 9600);
 
     // Register signal handler to close serial port when ctrl+c is pressed
@@ -49,22 +58,22 @@ int main(int argc, char* argv[]) {
         DS.waitForMotionComplete();
         
         SEL->Close();
-        logv("All done!");
+        Logger::info("All done!");
     }
 
     catch (const std::exception& e) {
-        std::cerr << "Exception caught. " << std::string(e.what()) << "\n Attempting to exit gracefully." << std::endl;
+        Logger::error("Exception caught. " + std::string(e.what()) + "\nAttempting to exit gracefully.");
         SEL_Interface::HaltAll();
         SEL->Close();
-        std::cerr << "Shutdown complete, re-throwing the error.";
+        Logger::info("Shutdown complete, re-throwing the error.");
         throw;
     }
 
     catch (...) {
-        std::cout << "Unknown exception caught. Attempting to exit gracefully." << std::endl;
+        Logger::error("Unknown exception caught. Attempting to exit gracefully.");
         SEL_Interface::HaltAll();
         SEL->Close();
-        std::cerr << "Shutdown complete, re-throwing the error.";
+        Logger::info("Shutdown complete, re-throwing the error.");
         throw;
     }
 
