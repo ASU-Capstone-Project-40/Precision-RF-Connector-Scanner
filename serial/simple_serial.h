@@ -80,5 +80,6 @@ private:
 };
 
 extern SimpleSerial* SEL;
+extern SimpleSerial* Gripper;
 
 #endif // SIMPLE_SERIAL_H

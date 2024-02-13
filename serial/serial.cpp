@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
         }
         else if (arg == "--sel_port" || arg == "-port") {
             if (argc < i+1) {
-                Logger::warn(arg + " flag provided but no value specified. Using default log level.");
+                Logger::warn(arg + " flag provided but no value specified. Using default SEL port " + sel_port);
                 continue;
             }
             sel_port = argv[i+1];
