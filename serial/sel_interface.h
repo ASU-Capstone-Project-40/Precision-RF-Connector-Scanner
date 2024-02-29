@@ -4,6 +4,7 @@
 #include "simple_serial.h"
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 namespace SEL_Interface
 {
@@ -17,23 +18,24 @@ namespace SEL_Interface
         NEGATIVE = 0,
         POSITIVE = 1
     };
-    
+
     static std::string exec = "!99";
     static std::string inq = "?99";
     static std::string term = "@@\r\n";
 
         /**
      * Formats a numeric value into a string with a given length and precision.
-     * \param value Value to convert
+     * \param value Value to convert - must be a number type
      * \param length Length of string to output
-     * \param precision Number of decimal places to output.
+     * \param precision Number of decimal places to output. Defaults to zero if unspecified.
+     * .
      * Example input: 123.4
      * Example output: "00123.40"
      */
     template <typename T>
-    std::string toPaddedString(T value, uint8_t length, uint8_t precision) {
-        Logger::debug("SEL_Interface::toPaddedString: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
-    
+    std::string format(T value, uint8_t length, uint8_t precision = 0) {
+        Logger::debug("SEL_Interface::format: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
+
         if (value < 0) {
             throw std::runtime_error("SEL_Interface::formatValue: value " + std::to_string(value) + " must not be negative");
         }
@@ -41,14 +43,15 @@ namespace SEL_Interface
         std::ostringstream stream;
         stream << std::fixed << std::setprecision(precision) << std::setw(length) << std::setfill('0') << value;
         std::string result = stream.str();
-        
+
         if (result.length() > length) {
-            throw std::runtime_error("SEL_Interface::toPaddedString: value " + std::to_string(value) + " is too large to convert into this format");
+            throw std::runtime_error("SEL_Interface::format: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        Logger::debug("SEL_Interface::toPaddedString: Successfully converted value: " + result);
+        Logger::debug("SEL_Interface::format: Successfully converted value: " + result);
         return result;
     }
+
             /******************************************************
              ***                Inquiry Commands                ***
              ******************************************************/
@@ -98,7 +101,7 @@ namespace SEL_Interface
      */
     std::string Home(int axis) {
         std::string code = "HOM";
-        std::string axis_pattern_string = toPaddedString<int>(axis, 2, 0);
+        std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + "00" + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
@@ -118,7 +121,7 @@ namespace SEL_Interface
         for (size_t i = 0; i < joint_state.size(); i++) {
             if (joint_state[i] >= 0) {
                 axis_pattern += static_cast<uint8_t>(std::pow(2, i));
-                axis_positions.push_back(toPaddedString<double>(joint_state[i], 8, 2));
+                axis_positions.push_back(format<double>(joint_state[i], 8, 2));
             }
         }
 
@@ -126,9 +129,9 @@ namespace SEL_Interface
             Logger::error("SEL_Interface::MoveToPosition: No axes commanded.");
             return "";
         }
-        
-        std::string axis_pattern_string = toPaddedString<uint16_t>(axis_pattern, 2, 0);
-        
+
+        std::string axis_pattern_string = format<int>(axis_pattern, 2);
+
         std::string cmd = exec + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity a param instead of hard-coded
 
         for (auto& axis_position : axis_positions) {
@@ -147,10 +150,10 @@ namespace SEL_Interface
      * \param axis Axis or axes to halt
      * Example command: !99HLT03@@
      * Example response:  #99HLT@@
-     */ 
+     */
     std::string Halt(int axis) {
         std::string code = "HLT";
-        std::string axis_pattern_string = toPaddedString<int>(axis, 2, 0);
+        std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
@@ -160,7 +163,7 @@ namespace SEL_Interface
         return resp;
     }
 
-    
+
     /**
      * Stops X and Y axes.
     */
@@ -181,18 +184,80 @@ namespace SEL_Interface
     */
     std::string Jog(int axis, int direction, uint16_t velocity = 50, double acceleration = 0.3) {
         std::string code = "JOG";
-        std::string axis_pattern = toPaddedString<int>(axis, 2, 0);
-        std::string acceleration_string = toPaddedString<double>(acceleration, 4, 2);
-        std::string velocity_string = toPaddedString<int16_t>(std::abs(velocity), 4, 0);
+        std::string axis_pattern = format<int>(axis, 2, 0);
+        std::string acceleration_string = format<double>(acceleration, 4, 2);
+        std::string velocity_string = format<int16_t>(std::abs(velocity), 4, 0);
         std::string direction_string = std::to_string(direction);
         std::string cmd = exec + code + axis_pattern + acceleration_string + velocity_string + direction_string + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
         if (resp !=  "#99JOG@@") {
-            Logger::warn("SEL_Interface::Halt: Expected response #99JOG@@, recieved " + resp);
+            Logger::warn("SEL_Interface::Halt: Received unexpected response `" + resp + "` to command `" + cmd + "`");
         }
         return resp;
-    }   
+    }
+
+    void SetOutputs(std::vector<int> ports, std::vector<bool> values, std::vector<bool>& SEL_outputs) {
+        if (ports.size() != values.size() ) {
+            throw std::runtime_error("SEL_Interface::SetOutputs: ports and values must have the same number of elements");
+        }
+
+        std::vector<int> port_groups;
+        for (size_t i=0; i < ports.size(); i++)
+        {
+            int port_idx = ports[i] - 300;
+
+            if (port_idx < 0 || port_idx > SEL_outputs.size()) {
+                throw std::runtime_error("SEL_Interface::SetOutputs: Invalid port [" + std::to_string(ports[i]) +
+                "]. Output ports range from 300 to " + std::to_string( 300 + SEL_outputs.size() - 1));
+            }
+
+            SEL_outputs[port_idx] = values[i];
+
+            int group = (ports[i]-300) / 8;
+            auto it = std::find(port_groups.begin(), port_groups.end(), group);
+            if (it != port_groups.end()) {
+                continue;
+            }
+            port_groups.push_back(group);
+        }
+
+        for (auto& group : port_groups) {
+            size_t group_start = group * 8;
+            size_t group_end = group_start + 7;
+
+            std::vector<bool> group_values(SEL_outputs.begin() + group_start, SEL_outputs.begin() + group_end + 1);
+
+            std::string hex_values_string = "0123456789ABCDEF";
+            std::string group_values_string;
+            int hex_value = 0;
+
+            for (int i=4; i < 8; i++) {
+                hex_value += group_values[i] * std::pow(2, i-4);
+            }
+
+            group_values_string.push_back(hex_values_string[hex_value]);
+
+            hex_value = 0;
+
+            for (int i=0; i < 4; i++) {
+                hex_value += group_values[i] * std::pow(2, i);
+            }
+
+            group_values_string.push_back(hex_values_string[hex_value]);
+            std::string group_string = format<uint16_t>(group, 2);
+            std::string code = "OTS";
+
+            std::string cmd = exec + code + group_string + group_values_string + term;
+
+            SEL->writeString(cmd);
+            std::string resp = SEL->readLine();
+            if (resp != "#99OTS@@") {
+                Logger::warn("SEL_Interface::SetOutputs: Received unexpected response `" + resp +
+                                         "` to command `" + cmd + "`");
+            }
+        }
+    }
 };
 
 #endif // SEL_INTERFACE_H

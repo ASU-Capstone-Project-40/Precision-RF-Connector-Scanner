@@ -1,13 +1,16 @@
 #include "logging.h"        // Supports optional verbose logging
 #include "simple_serial.h"  // Handles serial communication
+#include <iomanip>
+#include <stdlib.h>     //for using the function sleep
+
 
 SimpleSerial *Gripper = nullptr;
 
 int Logger::log_level_ = Logger::Level::DEBUG;
 
 int main(int argc, char* argv[]) {
-    
-    std::string gripper_port = "COM3";
+
+    std::string gripper_port = "COM4";
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if (arg == "--log_level" || arg == "-log") {
@@ -19,7 +22,7 @@ int main(int argc, char* argv[]) {
             i++;
             continue;
         }
-        else if (arg == "--gripper_port" || arg == "-port") {
+        else if (arg == "--gripper-port") {
             if (argc < i+1) {
                 Logger::warn(arg + " flag provided but no value specified. Using default gripper port.");
                 continue;
@@ -28,25 +31,60 @@ int main(int argc, char* argv[]) {
             i++;
             continue;
         }
+        else {
+            Logger::warn("Arg " + arg + " not recognized. Ignoring...");
+        }
     }
 
     Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(115200));
     Gripper = new SimpleSerial(gripper_port, 115200);
 
     Logger::warn("Attempting to initialize gripper.");
-    Gripper->writeString("01 06 01 00 01 49 F6");
-    Gripper->readLine();
+
+    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x01, 0x49, 0xF6};
+    Gripper->writeBytes(data, sizeof(data));
+    // Gripper->readLine();
     Logger::warn("Success!");
-    
+    Gripper->writeString("\r\n");
+    sleep(1);
+
+
+    std::string hexData = {static_cast<char>(0x01), static_cast<char>(0x06), static_cast<char>(0x01), static_cast<char>(0x00),
+                           static_cast<char>(0x01), static_cast<char>(0x49), static_cast<char>(0xF6)};
+
+    Gripper->writeString(hexData);
+    // Gripper->readLine();
+    Logger::warn("Success!");
+    Gripper->writeString("\r\n");
+    sleep(1);
+
+    Gripper->writeString("010601000149F6");
+    // Gripper->readLine();
+    Logger::warn("Success!");
+    Gripper->writeString("\r\n");
+    sleep(1);
+
+    Logger::warn("Attempting to re-initialize gripper.");
+    Gripper->writeString("0106010000A5484D");
+    // Gripper->readLine();
+    Logger::warn("Success!");
+Gripper->writeString("\r\n");
+    sleep(1);
+
+
     Logger::warn("Attempting to read the reference position currently set.");
-    Gripper->writeString("01 03 01 03 00 01 75 F6");
-    Gripper->readLine();
+    Gripper->writeString("01030103000175F6");
+    // Gripper->readLine();
     Logger::warn("Success!");
+Gripper->writeString("\r\n");
+    sleep(1);
 
     Logger::warn("Attempting to set gripper to 500 position.");
-    Gripper->writeString("01 06 01 03 01 F4 78 21");
-    Gripper->readLine();
-    Logger::warn("Success!"); 
+    Gripper->writeString("0106010301F47821");
+    // Gripper->readLine();
+    Logger::warn("Success!");
+Gripper->writeString("\r\n");
+    sleep(1);
 
     return 0;
 }

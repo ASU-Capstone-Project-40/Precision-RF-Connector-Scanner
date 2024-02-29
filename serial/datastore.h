@@ -4,7 +4,7 @@
 #include <string>
 #include "sel_interface.h"
 #include "logging.h"
-
+#include <vector>
 
 class SELMotor {
 public:
@@ -23,6 +23,8 @@ public:
     SELMotor y_axis;
     uint16_t SEL_velocity = 100; // mm/s
     uint8_t z_axis = 0;
+
+    std::vector<bool> SEL_outputs;
 
     Datastore(const Datastore&) = delete;
     Datastore& operator=(const Datastore&) = delete;
@@ -103,7 +105,8 @@ public:
     }
 
 private:
-    Datastore() = default;
+    Datastore(): SEL_outputs(288, false) {
+    }
 };
 
 

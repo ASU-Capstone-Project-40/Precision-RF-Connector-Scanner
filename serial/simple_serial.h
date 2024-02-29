@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include "logging.h"
+#include <iomanip>
 
 // Create with help from https://web.archive.org/web/20130825102715/http://www.webalice.it/fede.tft/serial_port/serial_port.html
 class SimpleSerial
@@ -33,6 +34,20 @@ public:
     {
         Logger::debug("Sending: " + s);
         boost::asio::write(serial,boost::asio::buffer(s.c_str(),s.size()));
+    }
+
+
+    void writeBytes(unsigned char* data, std::size_t length){
+        std::cout << std::hex << std::setw(2) << std::setfill('0');
+        std::cout << "SENDING WRITEBYTES COMMAND" << std::endl;
+        // Iterate through each byte in the data array
+        for(std::size_t i = 0; i < length; ++i) {
+            // Print the current byte in hexadecimal format
+            std::cout << static_cast<int>(data[i]) << " ";
+        }
+
+        std::cout << std::endl;
+        boost::asio::write(serial,boost::asio::buffer(data,length));
     }
 
     /**

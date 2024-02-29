@@ -8,7 +8,7 @@ SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;
 
 int main(int argc, char* argv[]) {
-    
+
     std::string sel_port = "COM3";
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -44,6 +44,11 @@ int main(int argc, char* argv[]) {
         SEL_Interface::Home(SEL_Interface::Axis::XY);
         DS.Update();
 
+        Logger::error("This is an error");
+        Logger::warn("This is a warning");
+        Logger::info("This is info");
+        Logger::debug("This is debug");
+
         while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
             DS.Update();
         }
@@ -55,8 +60,15 @@ int main(int argc, char* argv[]) {
 
         SEL_Interface::Jog(SEL_Interface::Axis::XY, SEL_Interface::Direction::NEGATIVE);
 
+        DS.Update();
+        while(DS.x_axis.position_ > 50.0){
+            DS.Update();
+        }
+
+        SEL_Interface::HaltAll();
+
         DS.waitForMotionComplete();
-        
+
         SEL->Close();
         Logger::info("All done!");
     }
