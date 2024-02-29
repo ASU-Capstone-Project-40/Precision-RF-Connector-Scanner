@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     std::string sel_port = "COM3";
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
-        if (arg == "--log_level" || arg == "-log") {
+        if (arg == "--log-level" || arg == "-log") {
             if (argc < i+1) {
                 Logger::warn(arg + " flag provided but no value specified. Using default log level.");
                 continue;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
             i++;
             continue;
         }
-        else if (arg == "--sel_port" || arg == "-port") {
+        else if (arg == "--sel-port" || arg == "-p") {
             if (argc < i+1) {
                 Logger::warn(arg + " flag provided but no value specified. Using default SEL port " + sel_port);
                 continue;
@@ -29,6 +29,9 @@ int main(int argc, char* argv[]) {
             sel_port = argv[i+1];
             i++;
             continue;
+        }
+        else {
+            Logger::warn(arg + " flag not recognized. Ignoring.");
         }
     }
 
@@ -39,35 +42,36 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, signalHandler);
 
     try {
-        auto& DS = Datastore::getInstance();
         SEL_Interface::Test("helloworld");
-        SEL_Interface::Home(SEL_Interface::Axis::XY);
+
+        auto& DS = Datastore::getInstance();
         DS.Update();
 
-        Logger::error("This is an error");
-        Logger::warn("This is a warning");
-        Logger::info("This is info");
-        Logger::debug("This is debug");
+        SEL_Interface::Home(SEL_Interface::Axis::XY);
+        DS.waitForMotionComplete();
 
-        while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
-            DS.Update();
-        }
+        SEL_Interface::MoveToPosition({0.0, 0.0});
+        DS.waitForMotionComplete();
+
+        SEL_Interface::MoveToPosition({0.0, 200.0});
+        DS.waitForMotionComplete();
 
         SEL_Interface::MoveToPosition({100.0, 200.0});
-        DS.Update();
-
         DS.waitForMotionComplete();
 
-        SEL_Interface::Jog(SEL_Interface::Axis::XY, SEL_Interface::Direction::NEGATIVE);
+        SEL_Interface::MoveToPosition({100.0, 0.0});
+        DS.waitForMotionComplete();
 
-        DS.Update();
-        while(DS.x_axis.position_ > 50.0){
-            DS.Update();
-        }
+        SEL_Interface::MoveToPosition({200.0, 0.0});
+        DS.waitForMotionComplete();
+
+        SEL_Interface::MoveToPosition({200.0, 200.0});
+        DS.waitForMotionComplete();
+
+        SEL_Interface::MoveToPosition({0.0, 0.0});
+        DS.waitForMotionComplete();
 
         SEL_Interface::HaltAll();
-
-        DS.waitForMotionComplete();
 
         SEL->Close();
         Logger::info("All done!");

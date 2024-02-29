@@ -10,6 +10,11 @@ int main()
 
     auto& DS = Datastore::getInstance();
 
+    Logger::error("This is an error");
+    Logger::warn("This is a warning");
+    Logger::info("This is info");
+    Logger::debug("This is debug");
+
     // for (size_t i=0; i<DS.SEL_outputs.size(); i++) {
     //     std::cout << i << ": " << DS.SEL_outputs[i] << std::endl;
     // }
