@@ -39,52 +39,14 @@ int main(int argc, char* argv[]) {
     Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(115200));
     Gripper = new SimpleSerial(gripper_port, 115200);
 
+
     Logger::warn("Attempting to initialize gripper.");
 
     unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x01, 0x49, 0xF6};
     Gripper->writeBytes(data, sizeof(data));
-    // Gripper->readLine();
-    Logger::warn("Success!");
-    Gripper->writeString("\r\n");
-    sleep(1);
+    Gripper->readLine();
 
-
-    std::string hexData = {static_cast<char>(0x01), static_cast<char>(0x06), static_cast<char>(0x01), static_cast<char>(0x00),
-                           static_cast<char>(0x01), static_cast<char>(0x49), static_cast<char>(0xF6)};
-
-    Gripper->writeString(hexData);
-    // Gripper->readLine();
-    Logger::warn("Success!");
-    Gripper->writeString("\r\n");
-    sleep(1);
-
-    Gripper->writeString("010601000149F6");
-    // Gripper->readLine();
-    Logger::warn("Success!");
-    Gripper->writeString("\r\n");
-    sleep(1);
-
-    Logger::warn("Attempting to re-initialize gripper.");
-    Gripper->writeString("0106010000A5484D");
-    // Gripper->readLine();
-    Logger::warn("Success!");
-Gripper->writeString("\r\n");
-    sleep(1);
-
-
-    Logger::warn("Attempting to read the reference position currently set.");
-    Gripper->writeString("01030103000175F6");
-    // Gripper->readLine();
-    Logger::warn("Success!");
-Gripper->writeString("\r\n");
-    sleep(1);
-
-    Logger::warn("Attempting to set gripper to 500 position.");
-    Gripper->writeString("0106010301F47821");
-    // Gripper->readLine();
-    Logger::warn("Success!");
-Gripper->writeString("\r\n");
-    sleep(1);
+    Logger::info("All done!");
 
     return 0;
 }

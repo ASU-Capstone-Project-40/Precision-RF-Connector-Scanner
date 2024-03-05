@@ -36,7 +36,6 @@ public:
         boost::asio::write(serial,boost::asio::buffer(s.c_str(),s.size()));
     }
 
-
     void writeBytes(unsigned char* data, std::size_t length){
         std::cout << std::hex << std::setw(2) << std::setfill('0');
         std::cout << "SENDING WRITEBYTES COMMAND" << std::endl;
@@ -47,7 +46,9 @@ public:
         }
 
         std::cout << std::endl;
-        boost::asio::write(serial,boost::asio::buffer(data,length));
+
+        auto buffer = boost::asio::buffer(data,length);
+        boost::asio::write(serial,buffer);
     }
 
     /**
