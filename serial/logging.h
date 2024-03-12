@@ -9,7 +9,7 @@ public:
     enum Level {
     OFF = 0,
     ERR = 1,
-    WARN = 2, 
+    WARN = 2,
     INFO = 3,
     DEBUG = 4
     };
@@ -64,7 +64,7 @@ public:
             std::cout << YELLOW << "[WARN] " << message << RESET << std::endl;
         }
     }
-        
+
     static void info(const std::string& message) {
         if (log_level_ >= Level::INFO) {
             std::cout << "[INFO] " << message << std::endl;
@@ -88,7 +88,7 @@ private:
     static inline const std::string RED = "\033[31m";       // Red text
     static inline const std::string YELLOW = "\033[33m";   // Yellow text
     static inline const std::string BLUE = "\033[34m";    // Blue text
-    static inline const std::string RESET = "\033[0m";   // Reset 
+    static inline const std::string RESET = "\033[0m";   // Reset
 };
 
 #endif // LOGGING_H
