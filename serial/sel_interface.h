@@ -118,7 +118,7 @@ namespace SEL_Interface
         std::string code = "MOV";
         uint16_t axis_pattern = 0;
         std::vector<std::string> axis_positions;
-        for (size_t i = 0; i < joint_state.size(); i++) {
+        for (size_t i = 0; i < joint_state.size(); ++i) {
             if (joint_state[i] >= 0) {
                 axis_pattern += static_cast<uint8_t>(std::pow(2, i));
                 axis_positions.push_back(format<double>(joint_state[i], 8, 2));
@@ -203,7 +203,7 @@ namespace SEL_Interface
         }
 
         std::vector<int> port_groups;
-        for (size_t i=0; i < ports.size(); i++)
+        for (size_t i=0; i < ports.size(); ++i)
         {
             int port_idx = ports[i] - 300;
 
@@ -232,7 +232,7 @@ namespace SEL_Interface
             std::string group_values_string;
             int hex_value = 0;
 
-            for (int i=4; i < 8; i++) {
+            for (int i=4; i < 8; ++i) {
                 hex_value += group_values[i] * std::pow(2, i-4);
             }
 
@@ -240,7 +240,7 @@ namespace SEL_Interface
 
             hex_value = 0;
 
-            for (int i=0; i < 4; i++) {
+            for (int i=0; i < 4; ++i) {
                 hex_value += group_values[i] * std::pow(2, i);
             }
 

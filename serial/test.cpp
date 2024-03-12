@@ -15,7 +15,7 @@ int main()
     Logger::info("This is info");
     Logger::debug("This is debug");
 
-    // for (size_t i=0; i<DS.SEL_outputs.size(); i++) {
+    // for (size_t i=0; i<DS.SEL_outputs.size(); ++i) {
     //     std::cout << i << ": " << DS.SEL_outputs[i] << std::endl;
     // }
 

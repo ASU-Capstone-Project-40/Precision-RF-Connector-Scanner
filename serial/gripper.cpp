@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
 
     std::string gripper_port = "COM4";
     int gripper_rate = 115200;
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--log_level" || arg == "-log") {
             if (argc < i+1) {
@@ -20,8 +20,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
             Logger::setLogLevel((argv[i+1]));
-            i++;
-            continue;
+            ++i;
         }
         else if (arg == "--gripper-port") {
             if (argc < i+1) {
@@ -29,8 +28,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
             gripper_port = argv[i+1];
-            i++;
-            continue;
+            ++i;
         }
         else if (arg == "--gripper-rate") {
             if (argc < i+1) {
@@ -38,8 +36,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
             gripper_rate = std::stoi(argv[i+1]);
-            i++;
-            continue;
+            ++i;
         }
         else {
             Logger::warn("Arg " + arg + " not recognized. Ignoring...");
