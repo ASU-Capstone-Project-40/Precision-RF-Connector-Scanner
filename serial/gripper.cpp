@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(115200));
-    Gripper = new SimpleSerial(gripper_port, 115200);
+    Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(gripper_rate));
+    Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
     Logger::warn("Attempting to initialize gripper.");
 
