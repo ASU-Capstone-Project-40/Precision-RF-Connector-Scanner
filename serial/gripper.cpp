@@ -2,6 +2,8 @@
 #include "simple_serial.h"  // Handles serial communication
 #include <iomanip>
 #include <stdlib.h>     //for using the function sleep
+#include <chrono>
+#include <thread>
 
 
 SimpleSerial *Gripper = nullptr;
@@ -48,9 +50,14 @@ int main(int argc, char* argv[]) {
 
     Logger::warn("Attempting to initialize gripper.");
 
-    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x01, 0x49, 0xF6};
+    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x00, 0x01, 0x49, 0xF6};
     Gripper->writeBytes(data, sizeof(data));
-    Gripper->readLine();
+    // Gripper->readLine();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x00, 0x01, 0xF6, 0x49};
+    Gripper->writeBytes(data, sizeof(data));
 
     Gripper->Close();
     Logger::info("All done!");
