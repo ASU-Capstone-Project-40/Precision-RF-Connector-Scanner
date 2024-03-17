@@ -1,7 +1,17 @@
 # Precision-RF-Connector-Scanner
 
-## serial
-RS232 serial communication with SEL-G controller in C++.
+## scanner
+Program and interfaces for the high-precision RF connector scanner.
+
+### Instructions for use
+1. Clone repositories
+2. Install dependencies
+3. Inside the `scanner` folder, create a build directory: `mkdir build`
+4. Enter the build folder: `cd build`
+5. Generate cmake build files: `cmake ..\`
+6. Build the project. `cmake --build .`
+7. Enter the Debug folder: `cd Debug`
+8. Run the scanner program. `.\scanner.exe`
 
 ## monte_carlo 
 A python framework for conducting Monte Carlo analyses.
