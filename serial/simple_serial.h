@@ -82,6 +82,43 @@ public:
         }
     }
 
+    /**
+     * Blocks forever.
+     * \return never
+     * \throws boost::system::system_error on failure
+     */
+    void readBytes()
+    {
+        Logger::debug("Receiving: ");
+        //Reading data char by char, code is optimized for simplicity, not speed
+        using namespace boost;
+        unsigned char c;
+        std::string result;
+        for(;;)
+        {
+            asio::read(serial,asio::buffer(&c,1));
+            std::cout << std::hex << (0xFF & c) << std::flush;
+        }
+    }
+
+    /**
+     * Reads data_length bytes from the serial device. Blocks until data_length bytes have been received.
+     * \return a vector of bytes of length data_length
+     * \throws boost::system::system_error on failure
+     */
+    std::vector<unsigned char> readBytes(size_t data_length)
+    {
+        Logger::debug("Receiving: ");
+        using namespace boost;
+        std::vector<unsigned char> data;
+        asio::read(serial,asio::buffer(&data, data_length));
+        for (size_t i = 0; i < data_length; ++i) {
+            std::cout << std::hex << (0xFF & data[i]) << std::flush;
+        }
+        std::cout << std::endl;
+        return data;
+    }
+
     void Close()
     {
         Logger::info("SimpleSerial::Close: Closing serial port on " + port);

@@ -52,12 +52,14 @@ int main(int argc, char* argv[]) {
 
     unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x00, 0x01, 0x49, 0xF6};
     Gripper->writeBytes(data, sizeof(data));
-    // Gripper->readLine();
+    Gripper->readBytes(sizeof(data));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x00, 0x01, 0xF6, 0x49};
-    Gripper->writeBytes(data, sizeof(data));
+    // Move to 500 command from manual
+    unsigned char move[] = {0x01, 0x06, 0x01, 0x03, 0x01, 0xF4, 0x78, 0x21};
+    Gripper->writeBytes(move, sizeof(move));
+    Gripper->readBytes();
 
     Gripper->Close();
     Logger::info("All done!");
