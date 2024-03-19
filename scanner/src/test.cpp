@@ -1,5 +1,5 @@
-#include "sel_interface.h"   // Defines SEL controller commands
-#include "datastore.h"
+#include "../include/sel_interface.h"   // Defines SEL controller commands
+#include "../include/datastore.h"
 
 SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;

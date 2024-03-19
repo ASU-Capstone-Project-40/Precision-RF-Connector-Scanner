@@ -1,8 +1,8 @@
-#include "signal_handler.h" // Handles graceful shutdowns when ctrl+c is pressed
-#include "logging.h"        // Supports optional verbose logging
-#include "simple_serial.h"  // Handles serial communication
-#include "sel_interface.h"  // Defines SEL controller commands
-#include "datastore.h"      // Parses and stores system data for easy access
+#include "../include/signal_handler.h" // Handles graceful shutdowns when ctrl+c is pressed
+#include "../include/logging.h"        // Supports optional verbose logging
+#include "../include/simple_serial.h"  // Handles serial communication
+#include "../include/sel_interface.h"  // Defines SEL controller commands
+#include "../include/datastore.h"      // Parses and stores system data for easy access
 
 SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;

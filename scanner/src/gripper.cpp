@@ -1,5 +1,5 @@
-#include "logging.h"        // Supports optional verbose logging
-#include "simple_serial.h"  // Handles serial communication
+#include "../include/logging.h"        // Supports optional verbose logging
+#include "../include/simple_serial.h"  // Handles serial communication
 #include <iomanip>
 #include <stdlib.h>     //for using the function sleep
 #include <chrono>

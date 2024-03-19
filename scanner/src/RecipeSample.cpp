@@ -8,8 +8,8 @@
 #include <list>
 
 
-#include "ResultData.h"
-#include "OutputObserver.h"
+#include "../include/ResultData.h"
+#include "../include/OutputObserver.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
