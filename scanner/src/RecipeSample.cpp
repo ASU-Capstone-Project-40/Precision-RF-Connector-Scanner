@@ -40,12 +40,17 @@ int main(int argc, char* argv[])
     std::string gripper_port = "COM4";
     int gripper_rate = 115200;
 
+    // Camera parameters
+    int resolution_x = 1280; // px
+    int resolution_y = 1024; // px
+    double tolerance = 5.0   // px
+
     // Workspace parameters
     double workspace_x = 300.0; // mm
     double workspace_y = 600.0; // mm
 
     // Scanning parameters (mm)
-    double scan_width = 50.0; // mm
+    double scan_width = 30.0; // mm
     double scan_speed = 0.0; // mm/s TODO: Implement this
 
     // Handle command line arguments
@@ -173,6 +178,22 @@ int main(int argc, char* argv[])
 
         if (object_detected) {
             // Refine position to place camera directly over connector
+
+
+            // bool within_tolerance = false;
+            // while (!within_tolerance) {
+            //     bool x_within_tolerance = std::abs(object_x_px - resolution_x) < tolerance;
+            //     if (!x_within_tolerance) {
+            //         double x_err =
+            //     }
+            //     bool y_within_tolerance = std::abs(object_y_px - resolution_y) < tolerance;
+            //     if (!y_within_tolerance) {
+
+            //     }
+            //     within_tolerance = x_within_tolerance && y_within_tolerance;
+            // }
+
+
             // Translate xy to place gripper directly over connector
             // Z down to mate with connector
             // Open gripper
@@ -185,6 +206,7 @@ int main(int argc, char* argv[])
         SEL_Interface::MoveToPosition({0, 0});
 
     }
+
     catch (const GenericException& e)
     {
         // Error handling
