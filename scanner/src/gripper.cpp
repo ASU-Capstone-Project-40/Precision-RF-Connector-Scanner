@@ -1,5 +1,6 @@
 #include "../include/logging.h"        // Supports optional verbose logging
 #include "../include/simple_serial.h"  // Handles serial communication
+#include "../include/gripper_interface.h" // Gripper interface functions
 #include <iomanip>
 #include <stdlib.h>     //for using the function sleep
 #include <chrono>
@@ -49,29 +50,23 @@ int main(int argc, char* argv[]) {
     Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
     Logger::warn("Attempting to initialize gripper.");
+    Gripper_Interface::Initialize();
 
-    unsigned char data[] = {0x01, 0x06, 0x01, 0x00, 0x00, 0x01, 0x49, 0xF6};
-    Gripper->writeBytes(data, sizeof(data));
-    // Gripper->readBytes(sizeof(data));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    Gripper_Interface::MoveTo();
 
-    // Move to 500 command from manual
-    unsigned char move[] = {0x01, 0x06, 0x01, 0x03, 0x01, 0xF4, 0x78, 0x21};
-    Gripper->writeBytes(move, sizeof(move));
-    // Gripper->readBytes();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    Gripper_Interface::Close();
 
-    unsigned char close[] = {0x01, 0x06, 0x01, 0x03, 0x00, 0x00, 0x78, 0x36};
-    Gripper->writeBytes(close, sizeof(close));
-    // Gripper->readBytes(8);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    Gripper_Interface::MoveTo();
 
-    unsigned char open[] = {0x01, 0x06, 0x01, 0x03, 0x03, 0xE8, 0x78, 0x88};
-    Gripper->writeBytes(open, sizeof(open));
-    // Gripper->readBytes(8);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    Gripper_Interface::Open();
 
     Gripper->Close();
     Logger::info("All done!");

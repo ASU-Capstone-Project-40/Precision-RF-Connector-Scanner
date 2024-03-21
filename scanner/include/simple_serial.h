@@ -36,6 +36,7 @@ public:
         boost::asio::write(serial,boost::asio::buffer(s.c_str(),s.size()));
     }
 
+    // TODO: Handle logging better
     void writeBytes(unsigned char* data, std::size_t length){
         std::cout << std::hex << std::setw(2) << std::setfill('0');
         std::cout << "SENDING WRITEBYTES COMMAND" << std::endl;
@@ -48,6 +49,19 @@ public:
         std::cout << std::endl;
 
         auto buffer = boost::asio::buffer(data,length);
+        boost::asio::write(serial,buffer);
+    }
+
+    // TODO: Handle logging better
+    void writeVector(std::vector<unsigned char> data){
+        std::cout << std::hex << std::setw(2) << std::setfill('0');
+        std::cout << "Writing vector ";
+        for(std::size_t i = 0; i < data.size(); ++i) {
+            // Print the current byte in hexadecimal format
+            std::cout << static_cast<int>(data[i]) << " ";
+        }
+        std::cout << std::endl;
+        auto buffer = boost::asio::buffer(data, data.size());
         boost::asio::write(serial,buffer);
     }
 
@@ -102,6 +116,7 @@ public:
     }
 
     /**
+     * TODO: This doesn't work correctly, might crash
      * Reads data_length bytes from the serial device. Blocks until data_length bytes have been received.
      * \return a vector of bytes of length data_length
      * \throws boost::system::system_error on failure
