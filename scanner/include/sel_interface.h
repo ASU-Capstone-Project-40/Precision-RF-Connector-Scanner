@@ -5,12 +5,14 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <algorithm>
 
 namespace SEL_Interface
 {
     enum Axis {
-        X = 1,
-        Y = 2,
+        NONE = 0,
+        Y = 1,
+        X = 2,
         XY = 3
     };
 
@@ -99,7 +101,7 @@ namespace SEL_Interface
      * Example command: !99HOM0300@@
      * Example response: #99HOM@@
      */
-    std::string Home(int axis) {
+    std::string Home(Axis axis) {
         std::string code = "HOM";
         std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + "00" + term;
@@ -115,6 +117,7 @@ namespace SEL_Interface
      * Example response: #99MOV@@
      */
     std::string MoveToPosition(std::vector<double> joint_state) {
+        std::swap(joint_state[0], joint_state[1]); // x and y are flipped on our controller
         std::string code = "MOV";
         uint16_t axis_pattern = 0;
         std::vector<std::string> axis_positions;
@@ -151,7 +154,7 @@ namespace SEL_Interface
      * Example command: !99HLT03@@
      * Example response:  #99HLT@@
      */
-    std::string Halt(int axis) {
+    std::string Halt(Axis axis) {
         std::string code = "HLT";
         std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + term;
@@ -182,7 +185,7 @@ namespace SEL_Interface
      * Example command: !99JOG030.3000501@@
      * Example response: #99JOG@@
     */
-    std::string Jog(int axis, int direction, uint16_t velocity = 50, double acceleration = 0.3) {
+    std::string Jog(Axis axis, Direction direction, uint16_t velocity = 50, double acceleration = 0.3) {
         std::string code = "JOG";
         std::string axis_pattern = format<int>(axis, 2, 0);
         std::string acceleration_string = format<double>(acceleration, 4, 2);

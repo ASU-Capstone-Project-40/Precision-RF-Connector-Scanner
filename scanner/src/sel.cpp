@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         SEL_Interface::Test("helloworld");
 
         auto& DS = Datastore::getInstance();
-        DS.Update();
+        DS.UpdateSEL();
 
         SEL_Interface::Home(SEL_Interface::Axis::XY);
         DS.waitForMotionComplete();
