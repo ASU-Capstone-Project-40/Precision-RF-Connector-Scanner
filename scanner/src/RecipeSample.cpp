@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
 
     // Initialize the gripper
     Gripper_Interface::Initialize();
+    Gripper_Interface::MoveTo();
 
     // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
@@ -113,19 +114,22 @@ int main(int argc, char* argv[])
 
         // Start the processing.
         recipe.Start();
+
         bool object_detected = false;
         double object_x_px = 0;
         double object_y_px = 0;
+        int num_passes = std::ceil(workspace_x / scan_width) + 1;
 
         // Begin scan
-        int num_passes = 1 + static_cast<int>(workspace_x) / static_cast<int>(scan_width);
-        for (int i = 0; i < num_passes; ++i) {
-            double x_coordinate = std::min(scan_width * i, workspace_x);
+        for (int i = 0; i < num_passes*2; ++i) {
+            double x_coordinate = std::min(scan_width * (i/2), workspace_x);
+            double y_coordinate = workspace_y * (((i+1)/2) % 2);
             SEL_Interface::MoveToPosition({x_coordinate, workspace_y});
 
             DS.UpdateSEL();
             // Continously get camera data and check if move has completed
             while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+                DS.UpdateSEL();
                 // Get camera data
                 if (resultCollector.GetWaitObject().Wait(5000)) // Reduce this timeout?
                 {
@@ -158,17 +162,27 @@ int main(int argc, char* argv[])
                     throw RUNTIME_EXCEPTION("Result timeout");
                 }
 
-                DS.UpdateSEL();
             }
-            // Robot is now stationary, whether through halting or arriving at end of row
+            // Robot is now stationary, whether through halting or arriving at target
             if (object_detected)
                 break;
 
-            // Move to start of next row
+            // No object detected but scan still in progress, continue to next pass
+        }
+        // At this point, scan is complete.
+
+        if (object_detected) {
+            // Refine position to place camera directly over connector
+            // Translate xy to place gripper directly over connector
+            // Z down to mate with connector
+            // Open gripper
+            Gripper_Interface::Open();
+            // Z up
         }
 
-        // Stop the processing.
+        // Stop the image processing.
         recipe.Stop();
+        SEL_Interface::MoveToPosition({0, 0});
 
     }
     catch (const GenericException& e)
