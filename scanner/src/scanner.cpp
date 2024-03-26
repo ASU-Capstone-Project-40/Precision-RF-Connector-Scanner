@@ -95,30 +95,31 @@ int main(int argc, char* argv[])
         }
     }
 
-    // Initialize serial connections
-    Logger::info("Opening new serial connection on " + sel_port + " at rate " + std::to_string(sel_rate));
-    SEL = new SimpleSerial(sel_port, sel_rate);
-    Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(gripper_rate));
-    Gripper = new SimpleSerial(gripper_port, gripper_rate);
-
-    // Create datastore
-    auto& DS = Datastore::getInstance();
-
-    // Ensure the end effector starts from the origin
-    SEL_Interface::MoveToPosition({0.0, 0.0});
-    DS.waitForMotionComplete();
-    SEL_Interface::SetOutputs({302, 303, 304, 305, 306}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
-    DS.waitForZMotionComplete();
-
-    // Initialize the gripper
-    Gripper_Interface::Initialize();
-    Gripper_Interface::MoveTo();
-
-    // Before using any pylon methods, the pylon runtime must be initialized.
-    PylonInitialize();
-
     try
     {
+        // Initialize serial connections
+        Logger::info("Opening new serial connection on " + sel_port + " at rate " + std::to_string(sel_rate));
+        SEL = new SimpleSerial(sel_port, sel_rate);
+        Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(gripper_rate));
+        Gripper = new SimpleSerial(gripper_port, gripper_rate);
+
+        // Create datastore
+        auto& DS = Datastore::getInstance();
+
+        // Ensure the end effector starts from the origin
+        SEL_Interface::MoveToPosition({0.0, 0.0});
+        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({302, 303, 304, 305, 306}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
+        DS.waitForZMotionComplete();
+
+        // Initialize the gripper
+        Gripper_Interface::Initialize();
+        Gripper_Interface::MoveTo();
+
+        // Before using any pylon methods, the pylon runtime must be initialized.
+        PylonInitialize();
+
+
         // Initialize Pylon stuff
         // This object is used for collecting the output data.
         // If placed on the stack, it must be created before the recipe
@@ -220,7 +221,7 @@ int main(int argc, char* argv[])
                 if (std::abs(x_err) > tolerance) {
                     auto jog_direction = static_cast<SEL_Interface::Direction>((x_err > 0 ? 1 : -1) * camera_x_alignment * -1);
                     int jog_speed = std::abs(x_err) * refinement_speed_scale_factor;
-                    jog_speed = (std::min)(jog_speed, 1);
+                    jog_speed = (std::max)(jog_speed, 1);
                     SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed);
                 }
                 else {
@@ -231,7 +232,7 @@ int main(int argc, char* argv[])
                 if (std::abs(y_err) > tolerance) {
                     auto jog_direction = static_cast<SEL_Interface::Direction>((y_err > 0 ? 1 : -1) * camera_y_alignment * -1);
                     int jog_speed = std::abs(y_err) * refinement_speed_scale_factor;
-                    jog_speed = (std::min)(jog_speed, 1);
+                    jog_speed = (std::max)(jog_speed, 1);
                     SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, jog_speed);
                 }
                 else {
@@ -263,14 +264,16 @@ int main(int argc, char* argv[])
     catch (const GenericException& e)
     {
         // Error handling
-        std::cerr << "An exception occurred." <<std::endl << e.GetDescription() <<std::endl;
+        std::cerr << "An exception occurred (likely pylon) - " <<std::endl << e.GetDescription() <<std::endl;
         exitCode = 1;
+        throw;
     }
 
     catch (const std::exception& e)
     {
-        std::cout << "std::exception caught :" << e.what() << std::endl;
+        std::cout << "Exception caught :" << e.what() << std::endl;
         exitCode = 1;
+        throw;
     }
 
     // Releases all pylon resources.
