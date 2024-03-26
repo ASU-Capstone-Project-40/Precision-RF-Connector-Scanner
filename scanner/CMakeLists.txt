@@ -8,15 +8,15 @@ set(CMAKE_CXX_STANDARD 17)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(scanner VERSION 0.0)
-include_directories("C:/Program Files/Basler/pylon 7/Development/include")
+include_directories("C:/Program Files/Basler/pylon 7/Development/include" "$ENV{BOOST_ROOT}")
 find_package(pylon REQUIRED)
 find_package(pylonDataProcessing REQUIRED)
 
 add_executable(scanner
-    scanner.cpp
-    scannerV1.precipe
-    ResultData.h
-    OutputObserver.h
+    src/scanner.cpp
+    include/scannerV1.precipe
+    include/ResultData.h
+    include/OutputObserver.h
 )
 
 get_filename_component(PYLON_RECIPE

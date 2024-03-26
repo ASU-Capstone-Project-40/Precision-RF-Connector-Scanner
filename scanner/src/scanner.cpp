@@ -1,3 +1,4 @@
+#include <WinSock2.h>
 // Include files to use the pylon API.
 #include <pylon/PylonIncludes.h>
 
@@ -6,6 +7,7 @@
 
 // The sample uses the std::list.
 #include <list>
+#include <algorithm>
 
 #include "../include/ResultData.h"
 #include "../include/OutputObserver.h"
@@ -19,9 +21,6 @@
 // Namespaces for using pylon objects
 using namespace Pylon;
 using namespace Pylon::DataProcessing;
-
-// Namespace for using cout
-using namespace std;
 
 SimpleSerial *SEL = nullptr;
 SimpleSerial *Gripper = nullptr;
@@ -46,23 +45,23 @@ int main(int argc, char* argv[])
     };
 
     // Camera parameters
-    AxisAlignment camera_x_alignment = INVERTED; // Camera x with respect to robot x
-    AxisAlignment camera_y_alignment = ALIGNED; // Camera y with respect to robot y
+    int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
+    int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
     int resolution_x = 1280;  // px
     int resolution_y = 1024; // px
     double tolerance = 1.0; // px
 
     // Workspace parameters
-    double workspace_x = 300.0;           // mm
-    double workspace_y = 600.0;          // mm
-    double camera_to_gripper_x = 150.0; // mm
-    double camera_to_gripper_y = 0.0;  // mm
+    double workspace_x = 300.0;  // mm
+    double workspace_y = 600.0; // mm
+    double camera_to_gripper_x = 163.8173; // mm
+    double camera_to_gripper_y = 7.46506; // mm
 
     // Scanning parameters (mm)
     double scan_width = 30.0; // mm
     double scan_speed = 0.0; // mm/s TODO: Implement this
     double max_refinement_speed = 25.0; // mm/s
-    double refinement_speed_scale_factor = max_refinement_speed / (std::max(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
+    double refinement_speed_scale_factor = max_refinement_speed / ((std::max)(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -108,6 +107,8 @@ int main(int argc, char* argv[])
     // Ensure the end effector starts from the origin
     SEL_Interface::MoveToPosition({0.0, 0.0});
     DS.waitForMotionComplete();
+    SEL_Interface::SetOutputs({302, 303, 304, 305, 306}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
+    DS.waitForZMotionComplete();
 
     // Initialize the gripper
     Gripper_Interface::Initialize();
@@ -138,7 +139,7 @@ int main(int argc, char* argv[])
 
         // Begin scan
         for (int i = 0; i < num_passes*2; ++i) {
-            double x_coordinate = std::min(scan_width * (i/2), workspace_x);
+            double x_coordinate = (std::min)(scan_width * (i/2), workspace_x);
             double y_coordinate = workspace_y * (((i+1)/2) % 2);
             SEL_Interface::MoveToPosition({x_coordinate, workspace_y});
 
@@ -164,12 +165,12 @@ int main(int argc, char* argv[])
                         }
                         else {
                             if(object_detected) {
-                                Logger::error("Lost sight of object after initial detection!")
+                                Logger::error("Lost sight of object after initial detection!");
                             }
                         }
                     }
                     else {
-                        cout << "An error occurred during processing recipe: " << result.errorMessage << endl;
+                        std::cout << "An error occurred during processing recipe: " << result.errorMessage <<std::endl;
                     }
                 }
                 else
@@ -207,7 +208,7 @@ int main(int argc, char* argv[])
                     }
                     else
                     {
-                        cout << "An error occurred during processing recipe: " << result.errorMessage << endl;
+                        std::cout << "An error occurred during processing recipe: " << result.errorMessage <<std::endl;
                     }
                 }
                 else
@@ -217,9 +218,9 @@ int main(int argc, char* argv[])
 
                 double x_err = object_x_px - resolution_x/2;
                 if (std::abs(x_err) > tolerance) {
-                    int jog_direction = (x_err > 0 ? 1 : -1) * camera_x_alignment * -1;
+                    auto jog_direction = static_cast<SEL_Interface::Direction>((x_err > 0 ? 1 : -1) * camera_x_alignment * -1);
                     int jog_speed = std::abs(x_err) * refinement_speed_scale_factor;
-                    jog_speed = std::min(jog_speed, 1);
+                    jog_speed = (std::min)(jog_speed, 1);
                     SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed);
                 }
                 else {
@@ -228,9 +229,9 @@ int main(int argc, char* argv[])
 
                 double y_err = object_y_px - resolution_y/2;
                 if (std::abs(y_err) > tolerance) {
-                    int jog_direction = (y_err > 0 ? 1 : -1) * camera_y_alignment * -1;
+                    auto jog_direction = static_cast<SEL_Interface::Direction>((y_err > 0 ? 1 : -1) * camera_y_alignment * -1);
                     int jog_speed = std::abs(y_err) * refinement_speed_scale_factor;
-                    jog_speed = std::min(jog_speed, 1);
+                    jog_speed = (std::min)(jog_speed, 1);
                     SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, jog_speed);
                 }
                 else {
@@ -242,24 +243,33 @@ int main(int argc, char* argv[])
             }
 
             // Translate xy to place gripper directly over connector
-            SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y})
+            SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y});
             DS.waitForMotionComplete();
             // Z down to mate with connector
+            SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 1}, DS.SEL_outputs);
+            DS.waitForZMotionComplete();
             // Open gripper
             Gripper_Interface::Open();
             // Z up
+            SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs);
+            DS.waitForZMotionComplete();
         }
 
         // Stop the image processing.
         recipe.Stop();
         SEL_Interface::MoveToPosition({0, 0});
-
     }
 
     catch (const GenericException& e)
     {
         // Error handling
-        cerr << "An exception occurred." << endl << e.GetDescription() << endl;
+        std::cerr << "An exception occurred." <<std::endl << e.GetDescription() <<std::endl;
+        exitCode = 1;
+    }
+
+    catch (const std::exception& e)
+    {
+        std::cout << "std::exception caught :" << e.what() << std::endl;
         exitCode = 1;
     }
 
