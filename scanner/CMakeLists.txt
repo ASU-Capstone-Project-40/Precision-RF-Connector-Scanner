@@ -7,31 +7,31 @@ set(CMAKE_CXX_STANDARD 17)
 # Add paths to check for cmake modules:
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(image_reconSample VERSION 0.0)
+project(scanner VERSION 0.0)
 include_directories("C:/Program Files/Basler/pylon 7/Development/include")
 find_package(pylon REQUIRED)
 find_package(pylonDataProcessing REQUIRED)
 
-add_executable(image_reconSample
-    RecipeSample.cpp
-    image_recon.precipe
+add_executable(scanner
+    scanner.cpp
+    scannerV1.precipe
     ResultData.h
     OutputObserver.h
 )
 
 get_filename_component(PYLON_RECIPE
-    "${CMAKE_CURRENT_SOURCE_DIR}/image_recon.precipe" ABSOLUTE
+    "${CMAKE_CURRENT_SOURCE_DIR}/scannerV1.precipe" ABSOLUTE
 )
 
-target_compile_definitions(image_reconSample
+target_compile_definitions(scanner
         PRIVATE
         PYLON_RECIPE="${PYLON_RECIPE}"
         )
 
-target_link_libraries(image_reconSample
+target_link_libraries(scanner
     PRIVATE
     pylon
     pylon::DataProcessing
 )
 
-install( TARGETS image_reconSample )
+install( TARGETS scanner )
