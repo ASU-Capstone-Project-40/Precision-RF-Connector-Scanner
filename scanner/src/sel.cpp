@@ -54,31 +54,87 @@ int main(int argc, char* argv[]) {
         auto& DS = Datastore::getInstance();
         DS.UpdateSEL();
 
-        SEL_Interface::Home(SEL_Interface::Axis::XY);
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
 
-        SEL_Interface::MoveToPosition({0.0, 0.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs); //  Start moving
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({0.0, 200.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 1}, DS.SEL_outputs); // Set target to P1
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({100.0, 200.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 1, 0}, DS.SEL_outputs); // Set target to P2
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({100.0, 0.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 1, 1}, DS.SEL_outputs); // Set target to P3
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({200.0, 0.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 0, 0}, DS.SEL_outputs); // Set target to P4
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({200.0, 200.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 0, 1}, DS.SEL_outputs); // Set target to P5
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({0.0, 0.0});
-        DS.waitForMotionComplete();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 1, 0}, DS.SEL_outputs); // Set target to P6
+        DS.waitForZMotionComplete();
 
-        SEL_Interface::HaltAll();
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 1, 1}, DS.SEL_outputs); // Set target to P7
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 0, 0}, DS.SEL_outputs); // Set target to P8
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 0, 1}, DS.SEL_outputs); // Set target to P9
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 1, 0}, DS.SEL_outputs); // Set target to P10
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 1, 1}, DS.SEL_outputs); // Set target to P11
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 0, 0}, DS.SEL_outputs); // Set target to P12
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 0, 1}, DS.SEL_outputs); // Set target to P13
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 0}, DS.SEL_outputs); // Set target to P14
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 1}, DS.SEL_outputs); // Set target to P15
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
+        DS.waitForZMotionComplete();
+
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
+
+        // SEL_Interface::Home(SEL_Interface::Axis::XY);
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({0.0, 0.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({0.0, 200.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({100.0, 200.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({100.0, 0.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({200.0, 0.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({200.0, 200.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({0.0, 0.0});
+        // DS.waitForMotionComplete();
+
+        // SEL_Interface::HaltAll();
 
         SEL->Close();
         Logger::info("All done!");

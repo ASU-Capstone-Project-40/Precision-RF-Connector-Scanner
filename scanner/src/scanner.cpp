@@ -40,18 +40,29 @@ int main(int argc, char* argv[])
     std::string gripper_port = "COM4";
     int gripper_rate = 115200;
 
+    enum AxisAlignment {
+        ALIGNED = 1,
+        INVERTED = -1
+    };
+
     // Camera parameters
-    int resolution_x = 1280; // px
+    AxisAlignment camera_x_alignment = INVERTED; // Camera x with respect to robot x
+    AxisAlignment camera_y_alignment = ALIGNED; // Camera y with respect to robot y
+    int resolution_x = 1280;  // px
     int resolution_y = 1024; // px
-    double tolerance = 5.0   // px
+    double tolerance = 1.0; // px
 
     // Workspace parameters
-    double workspace_x = 300.0; // mm
-    double workspace_y = 600.0; // mm
+    double workspace_x = 300.0;           // mm
+    double workspace_y = 600.0;          // mm
+    double camera_to_gripper_x = 150.0; // mm
+    double camera_to_gripper_y = 0.0;  // mm
 
     // Scanning parameters (mm)
     double scan_width = 30.0; // mm
     double scan_speed = 0.0; // mm/s TODO: Implement this
+    double max_refinement_speed = 25.0; // mm/s
+    double refinement_speed_scale_factor = max_refinement_speed / (std::max(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -140,13 +151,8 @@ int main(int argc, char* argv[])
                 {
                     ResultData result;
                     resultCollector.GetResultData(result);
-                    if (!result.hasError)
-                    {
+                    if (!result.hasError) {
                         if (!result.scores.empty()) {
-                            cout << "Object detected!" << endl;
-                            cout << "Score: " << result.scores[0] << endl;
-                            cout << "Position: " << result.positions_px[0].X << ", " << result.positions_px[0].Y << endl;
-
                             object_detected = true;
                             object_x_px = result.positions_px[0].X;
                             object_y_px = result.positions_px[0].Y;
@@ -156,10 +162,14 @@ int main(int argc, char* argv[])
                             // is stable
                             SEL_Interface::HaltAll();
                         }
+                        else {
+                            if(object_detected) {
+                                Logger::error("Lost sight of object after initial detection!")
+                            }
+                        }
                     }
-                    else
-                    {
-                        cout << "An error occurred during processing recipe image_recon: " << result.errorMessage << endl;
+                    else {
+                        cout << "An error occurred during processing recipe: " << result.errorMessage << endl;
                     }
                 }
                 else
@@ -174,27 +184,66 @@ int main(int argc, char* argv[])
 
             // No object detected but scan still in progress, continue to next pass
         }
-        // At this point, scan is complete.
+        // At this point, scan is complete
 
         if (object_detected) {
             // Refine position to place camera directly over connector
+            bool within_tolerance = false;
+            while (!within_tolerance || DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+                // Take another image TODO: Make this a function
+                if (resultCollector.GetWaitObject().Wait(5000)) {
+                    ResultData result;
+                    resultCollector.GetResultData(result);
+                    if (!result.hasError)
+                    {
+                        if (!result.scores.empty()) {
+                            object_x_px = result.positions_px[0].X;
+                            object_y_px = result.positions_px[0].Y;
+                        }
+                        else
+                        {
+                            Logger::error("No object detected in refinement loop!");
+                        }
+                    }
+                    else
+                    {
+                        cout << "An error occurred during processing recipe: " << result.errorMessage << endl;
+                    }
+                }
+                else
+                {
+                    throw RUNTIME_EXCEPTION("Result timeout");
+                }
 
+                double x_err = object_x_px - resolution_x/2;
+                if (std::abs(x_err) > tolerance) {
+                    int jog_direction = (x_err > 0 ? 1 : -1) * camera_x_alignment * -1;
+                    int jog_speed = std::abs(x_err) * refinement_speed_scale_factor;
+                    jog_speed = std::min(jog_speed, 1);
+                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed);
+                }
+                else {
+                    SEL_Interface::Halt(SEL_Interface::Axis::X);
+                }
 
-            // bool within_tolerance = false;
-            // while (!within_tolerance) {
-            //     bool x_within_tolerance = std::abs(object_x_px - resolution_x) < tolerance;
-            //     if (!x_within_tolerance) {
-            //         double x_err =
-            //     }
-            //     bool y_within_tolerance = std::abs(object_y_px - resolution_y) < tolerance;
-            //     if (!y_within_tolerance) {
+                double y_err = object_y_px - resolution_y/2;
+                if (std::abs(y_err) > tolerance) {
+                    int jog_direction = (y_err > 0 ? 1 : -1) * camera_y_alignment * -1;
+                    int jog_speed = std::abs(y_err) * refinement_speed_scale_factor;
+                    jog_speed = std::min(jog_speed, 1);
+                    SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, jog_speed);
+                }
+                else {
+                    SEL_Interface::Halt(SEL_Interface::Axis::Y);
+                }
 
-            //     }
-            //     within_tolerance = x_within_tolerance && y_within_tolerance;
-            // }
-
+                within_tolerance = std::abs(x_err) < tolerance && std::abs(y_err) < tolerance;
+                DS.UpdateSEL();
+            }
 
             // Translate xy to place gripper directly over connector
+            SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y})
+            DS.waitForMotionComplete();
             // Z down to mate with connector
             // Open gripper
             Gripper_Interface::Open();

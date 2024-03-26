@@ -89,6 +89,19 @@ namespace SEL_Interface
         return resp;
     }
 
+    /**
+     * Inquires about the SEL input ports.
+     * Example command: ?99INP@@
+     * Reponse: #99INPC40000FFF... (66 F's) @@
+    */
+    std::string ReadInputs() {
+        std::string code = "INP";
+        std::string cmd = inq + code + term;
+        SEL->writeString(cmd);
+        std::string resp = SEL->readLine();
+        return resp;
+    }
+
 
             /******************************************************
              ***               Execution Commands               ***
