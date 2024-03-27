@@ -20,7 +20,7 @@ add_executable(scanner
 )
 
 get_filename_component(PYLON_RECIPE
-    "${CMAKE_CURRENT_SOURCE_DIR}/scannerV1.precipe" ABSOLUTE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/scannerV1.precipe" ABSOLUTE
 )
 
 target_compile_definitions(scanner

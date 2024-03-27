@@ -52,8 +52,8 @@ int main(int argc, char* argv[])
     double tolerance = 1.0; // px
 
     // Workspace parameters
-    double workspace_x = 300.0;  // mm
-    double workspace_y = 600.0; // mm
+    double workspace_x = 200.0;  // mm
+    double workspace_y = 400.0; // mm
     double camera_to_gripper_x = 163.8173; // mm
     double camera_to_gripper_y = 7.46506; // mm
 
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         SEL_Interface::MoveToPosition({0.0, 0.0});
         DS.waitForMotionComplete();
         SEL_Interface::SetOutputs({302, 303, 304, 305, 306}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
@@ -118,7 +118,6 @@ int main(int argc, char* argv[])
 
         // Before using any pylon methods, the pylon runtime must be initialized.
         PylonInitialize();
-
 
         // Initialize Pylon stuff
         // This object is used for collecting the output data.
@@ -147,9 +146,12 @@ int main(int argc, char* argv[])
             DS.UpdateSEL();
             // Continously get camera data and check if move has completed
             while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+                Logger::warn("In the scan loop, updating SEL");
                 DS.UpdateSEL();
+
                 // Get camera data
-                if (resultCollector.GetWaitObject().Wait(5000)) // Reduce this timeout?
+                Logger::warn("In the scan loop, getting image");
+                if (resultCollector.GetWaitObject().Wait(200)) // Blocks until image received, wait is ms
                 {
                     ResultData result;
                     resultCollector.GetResultData(result);
@@ -192,8 +194,9 @@ int main(int argc, char* argv[])
             // Refine position to place camera directly over connector
             bool within_tolerance = false;
             while (!within_tolerance || DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+                Logger::debug("Inside refinement loop, taking an image...");
                 // Take another image TODO: Make this a function
-                if (resultCollector.GetWaitObject().Wait(5000)) {
+                if (resultCollector.GetWaitObject().Wait(200)) {
                     ResultData result;
                     resultCollector.GetResultData(result);
                     if (!result.hasError)
@@ -204,17 +207,23 @@ int main(int argc, char* argv[])
                         }
                         else
                         {
-                            Logger::error("No object detected in refinement loop!");
+                            Logger::error("No object detected in refinement loop! Halting motion.");
+                            SEL_Interface.HaltAll();
+                            continue;
                         }
                     }
                     else
                     {
-                        std::cout << "An error occurred during processing recipe: " << result.errorMessage <<std::endl;
+                        Logger::error("An error occurred during processing recipe. Halting Motion. " + result.errorMessage);
+                        SEL_Interface.HaltAll();
+                        continue;
                     }
                 }
                 else
                 {
-                    throw RUNTIME_EXCEPTION("Result timeout");
+                    Logger::error("Image acquisition timed out in refinement loop. Halting motion");
+                    SEL_Interface.HaltAll();
+                    continue;
                 }
 
                 double x_err = object_x_px - resolution_x/2;
@@ -241,6 +250,11 @@ int main(int argc, char* argv[])
 
                 within_tolerance = std::abs(x_err) < tolerance && std::abs(y_err) < tolerance;
                 DS.UpdateSEL();
+                
+                if (DS.x_axis.position_ > workspace_x || DS.y_axis.position_ > workspace_y) {
+                    SEL_Interface.HaltAll();
+                    throw RUNTIME_EXCEPTION("End effector detected leaving the workspace!");
+                }
             }
 
             // Translate xy to place gripper directly over connector
@@ -248,12 +262,12 @@ int main(int argc, char* argv[])
             DS.waitForMotionComplete();
             // Z down to mate with connector
             SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 1}, DS.SEL_outputs);
-            DS.waitForZMotionComplete();
+            // DS.waitForZMotionComplete();
             // Open gripper
             Gripper_Interface::Open();
             // Z up
             SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs);
-            DS.waitForZMotionComplete();
+            // DS.waitForZMotionComplete();
         }
 
         // Stop the image processing.
