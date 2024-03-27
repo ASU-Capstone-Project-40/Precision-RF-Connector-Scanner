@@ -52,19 +52,19 @@ int main(int argc, char* argv[]) {
     Logger::warn("Attempting to initialize gripper.");
     Gripper_Interface::Initialize();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     Gripper_Interface::MoveTo();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     Gripper_Interface::Close();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     Gripper_Interface::MoveTo();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     Gripper_Interface::Open();
 

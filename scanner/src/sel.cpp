@@ -3,6 +3,7 @@
 #include "../include/simple_serial.h"  // Handles serial communication
 #include "../include/sel_interface.h"  // Defines SEL controller commands
 #include "../include/datastore.h"      // Parses and stores system data for easy access
+#include <thread>
 
 SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;
@@ -46,67 +47,87 @@ int main(int argc, char* argv[]) {
     SEL = new SimpleSerial(sel_port, sel_rate);
 
     // Register signal handler to close serial port when ctrl+c is pressed
-    signal(SIGINT, signalHandler);
+    // signal(SIGINT, signalHandler);
 
     try {
-        SEL_Interface::Test("helloworld");
 
+        SEL_Interface::MoveToPosition({100, 100});
         auto& DS = Datastore::getInstance();
         DS.UpdateSEL();
+        DS.waitForMotionComplete();
+
+        SEL_Interface::Test("helloworld");
 
         SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
         SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs); //  Start moving
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 1}, DS.SEL_outputs); // Set target to P1
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 1, 0}, DS.SEL_outputs); // Set target to P2
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 1, 1}, DS.SEL_outputs); // Set target to P3
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 0, 0}, DS.SEL_outputs); // Set target to P4
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 0, 1}, DS.SEL_outputs); // Set target to P5
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 1, 0}, DS.SEL_outputs); // Set target to P6
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 1, 1, 1}, DS.SEL_outputs); // Set target to P7
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 0, 0}, DS.SEL_outputs); // Set target to P8
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 0, 1}, DS.SEL_outputs); // Set target to P9
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 1, 0}, DS.SEL_outputs); // Set target to P10
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 0, 1, 1}, DS.SEL_outputs); // Set target to P11
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 0, 0}, DS.SEL_outputs); // Set target to P12
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 0, 1}, DS.SEL_outputs); // Set target to P13
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 0}, DS.SEL_outputs); // Set target to P14
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 1}, DS.SEL_outputs); // Set target to P15
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
-        DS.waitForZMotionComplete();
+        // DS.waitForZMotionComplete();
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
         SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
 
