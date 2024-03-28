@@ -210,22 +210,23 @@ int main(int argc, char* argv[])
                         }
                         else
                         {
+                            SEL_Interface::HaltAll();
                             Logger::error("No object detected in refinement loop! Halting motion.");
-                            SEL_Interface.HaltAll();
                             continue;
                         }
                     }
                     else
                     {
-                        Logger::error("An error occurred during processing recipe. Halting Motion. " + result.errorMessage);
-                        SEL_Interface.HaltAll();
+                        SEL_Interface::HaltAll();
+                        Logger::error("An error occurred during processing recipe. Halting Motion. ");
+                        std::cout << result.errorMessage << std::endl;
                         continue;
                     }
                 }
                 else
                 {
+                    SEL_Interface::HaltAll();
                     Logger::error("Image acquisition timed out in refinement loop. Halting motion");
-                    SEL_Interface.HaltAll();
                     continue;
                 }
 
@@ -255,7 +256,7 @@ int main(int argc, char* argv[])
                 DS.UpdateSEL();
 
                 if (DS.x_axis.position_ > workspace_x || DS.y_axis.position_ > workspace_y) {
-                    SEL_Interface.HaltAll();
+                    SEL_Interface::HaltAll();
                     throw RUNTIME_EXCEPTION("End effector detected leaving the workspace!");
                 }
             }
