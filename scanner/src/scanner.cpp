@@ -8,6 +8,7 @@
 // The sample uses the std::list.
 #include <list>
 #include <algorithm>
+#include <thread>
 
 #include "../include/ResultData.h"
 #include "../include/OutputObserver.h"
@@ -109,7 +110,9 @@ int main(int argc, char* argv[])
         // Ensure the end effector starts from the origin
         SEL_Interface::MoveToPosition({0.0, 0.0});
         DS.waitForMotionComplete();
-        SEL_Interface::SetOutputs({302, 303, 304, 305, 306}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs);
         // DS.waitForZMotionComplete();
 
         // Initialize the gripper
@@ -250,7 +253,7 @@ int main(int argc, char* argv[])
 
                 within_tolerance = std::abs(x_err) < tolerance && std::abs(y_err) < tolerance;
                 DS.UpdateSEL();
-                
+
                 if (DS.x_axis.position_ > workspace_x || DS.y_axis.position_ > workspace_y) {
                     SEL_Interface.HaltAll();
                     throw RUNTIME_EXCEPTION("End effector detected leaving the workspace!");
@@ -261,12 +264,18 @@ int main(int argc, char* argv[])
             SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y});
             DS.waitForMotionComplete();
             // Z down to mate with connector
-            SEL_Interface::SetOutputs({303, 304, 305, 306}, {1, 1, 1, 1}, DS.SEL_outputs);
-            // DS.waitForZMotionComplete();
+            SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 1}, DS.SEL_outputs);
+            SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+            SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs);
+            std::this_thread::sleep_for(std::chrono::milliseconds(15000)); //TODO: Replace with DS.waitForZMotionComplete();
+
             // Open gripper
             Gripper_Interface::Open();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
             // Z up
-            SEL_Interface::SetOutputs({303, 304, 305, 306}, {0, 0, 0, 0}, DS.SEL_outputs);
+            SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs);
+            std::this_thread::sleep_for(std::chrono::milliseconds(15000));
             // DS.waitForZMotionComplete();
         }
 

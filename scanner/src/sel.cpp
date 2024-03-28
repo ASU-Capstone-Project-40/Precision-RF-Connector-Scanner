@@ -62,94 +62,123 @@ int main(int argc, char* argv[]) {
         SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
 
         Logger::info("Commanding RC to P0 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
-        Logger::info("Telling RC to move ");
-        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs); //  Start moving
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //0
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P1 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 1}, DS.SEL_outputs); // Set target to P1
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //1
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P2 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 1, 0}, DS.SEL_outputs); // Set target to P2
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 1, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //2
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P3 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 1, 1}, DS.SEL_outputs); // Set target to P3
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 1, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //3
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P4 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 0, 0}, DS.SEL_outputs); // Set target to P4
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 0, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //4
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P5 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 0, 1}, DS.SEL_outputs); // Set target to P5
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 0, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //5
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P6 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 1, 0}, DS.SEL_outputs); // Set target to P6
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 1, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //6
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P7 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 1, 1}, DS.SEL_outputs); // Set target to P7
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 1, 1, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //7
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P8 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 0}, DS.SEL_outputs); // Set target to P8
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //8
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P9 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 1}, DS.SEL_outputs); // Set target to P9
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //9
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P10 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 1, 0}, DS.SEL_outputs); // Set target to P10
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 1, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //10
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P11 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 1, 1}, DS.SEL_outputs); // Set target to P11
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 1, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //11
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P 12");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 0, 0}, DS.SEL_outputs); // Set target to P12
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 0, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //12
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P13 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 0, 1}, DS.SEL_outputs); // Set target to P13
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 0, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //13
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P14 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 0}, DS.SEL_outputs); // Set target to P14
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //14
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P 15");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 1}, DS.SEL_outputs); // Set target to P15
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //15
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
         Logger::info("Commanding RC to P0 ");
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs); // Set target to P0
+        SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
+        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //0
         // DS.waitForZMotionComplete();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-
-        Logger::info("Telling RC Not to move ");
-        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs); //  signals the RC controller not to move to a new position
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
         // SEL_Interface::Home(SEL_Interface::Axis::XY);
         // DS.waitForMotionComplete();
