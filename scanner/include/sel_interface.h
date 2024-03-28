@@ -36,7 +36,7 @@ namespace SEL_Interface
      */
     template <typename T>
     std::string format(T value, uint8_t length, uint8_t precision = 0) {
-        Logger::debug("SEL_Interface::format: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
+        // Logger::debug("SEL_Interface::format: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
 
         if (value < 0) {
             throw std::runtime_error("SEL_Interface::formatValue: value " + std::to_string(value) + " must not be negative");
@@ -50,7 +50,7 @@ namespace SEL_Interface
             throw std::runtime_error("SEL_Interface::format: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        Logger::debug("SEL_Interface::format: Successfully converted value: " + result);
+        // Logger::debug("SEL_Interface::format: Successfully converted value: " + result);
         return result;
     }
 
