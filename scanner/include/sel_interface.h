@@ -213,6 +213,7 @@ namespace SEL_Interface
         return resp;
     }
 
+    // TODO: Make this use uints where appropriate
     void SetOutputs(std::vector<int> ports, std::vector<bool> values, std::vector<bool>& SEL_outputs) {
         if (ports.size() != values.size() ) {
             throw std::runtime_error("SEL_Interface::SetOutputs: ports and values must have the same number of elements");

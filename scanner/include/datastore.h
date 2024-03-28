@@ -124,6 +124,28 @@ public:
         }
     }
 
+    void MoveRC(uint8_t point) {
+        if (point > 15) {
+            throw std::runtime_error("DataStore::MoveRC - Invalid port [" + std::to_string(point) + "] provided. Valid ports are 0-15");
+        }
+
+        std::vector<int> position_ports {306, 305, 304, 303};
+        std::vector<bool> position_values;
+        position_values.push_back(static_cast<bool>(point & 0b00001000)); // Returns true only if bit 4 is high 
+        position_values.push_back(static_cast<bool>(point & 0b00000100)); // Returns true only if bit 3 is high 
+        position_values.push_back(static_cast<bool>(point & 0b00000010)); // Returns true only if bit 2 is high 
+        position_values.push_back(static_cast<bool>(point & 0b00000001)); // Returns true only if bit 1 is high
+        std::string debug_position_values;
+        for (auto val : position_values) {
+            debug_position_values += val ? "1" : "0";
+        }
+        Logger::debug("Attempting to move RC to point " + std::to_string(point) + " [" + debug_position_values + "]");
+
+        SEL_Interface::SetOutputs(position_ports, position_values, SEL_outputs); // Set position
+        SEL_Interface::SetOutputs({302}, {1}, SEL_outputs); // Command start
+        SEL_Interface::SetOutputs({302}, {0}, SEL_outputs);
+    }
+
 private:
     Datastore(): SEL_outputs(288, false) {
     }
