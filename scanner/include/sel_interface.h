@@ -21,9 +21,9 @@ namespace SEL_Interface
         POSITIVE = 1
     };
 
-    static std::string exec = "!99";
-    static std::string inq = "?99";
-    static std::string term = "@@\r\n";
+    static std::string exec = "!99"; // The beginning of an execution command
+    static std::string inq = "?99"; // The beginning of an inquiry command
+    static std::string term = "@@\r\n"; // The end of all commands
 
         /**
      * Formats a numeric value into a string with a given length and precision.
@@ -36,8 +36,6 @@ namespace SEL_Interface
      */
     template <typename T>
     std::string format(T value, uint8_t length, uint8_t precision = 0) {
-        // Logger::debug("SEL_Interface::format: Converting " + std::to_string(value) + " to string with length " + std::to_string(length) + " and precision " + std::to_string(precision));
-
         if (value < 0) {
             throw std::runtime_error("SEL_Interface::formatValue: value " + std::to_string(value) + " must not be negative");
         }
@@ -129,7 +127,12 @@ namespace SEL_Interface
      * Example command: !99 MOV 03 0000 0200 00050.00 00075.00 @@
      * Example response: #99MOV@@
      */
-    std::string MoveToPosition(std::vector<double> joint_state) {
+    std::string MoveToPosition(std::vector<double> joint_state, unsigned int velocity = 50, double acceleration = 0.0) {
+        if (acceleration < 0) {
+            Logger::warn("SEL_Interface::MoveToPosition: A negative acceleration was provided. Using controller default value instead.");
+            acceleration = 0.0;
+        }
+
         std::swap(joint_state[0], joint_state[1]); // x and y are flipped on our controller
         std::string code = "MOV";
         uint16_t axis_pattern = 0;
@@ -147,8 +150,10 @@ namespace SEL_Interface
         }
 
         std::string axis_pattern_string = format<int>(axis_pattern, 2);
+        std::string accel_string = format<double>(acceleration, 4, 2);
+        std::string vel_string = format<unsigned int>(velocity, 4);
 
-        std::string cmd = exec + code + axis_pattern_string + "0000" + "0100"; // TODO: Make velocity a param instead of hard-coded
+        std::string cmd = exec + code + axis_pattern_string + accel_string + vel_string;
 
         for (auto& axis_position : axis_positions) {
             cmd += axis_position;
@@ -186,7 +191,6 @@ namespace SEL_Interface
     void HaltAll() {
         Logger::info("SEL_Interface::HaltAll: Halting all axes");
         Halt(Axis::XY);
-        Logger::debug("SEL_Interface::HaltAll: Success");
     }
 
     /**

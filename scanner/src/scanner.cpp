@@ -5,7 +5,6 @@
 // Extend the pylon API for using pylon data processing.
 #include <pylondataprocessing/PylonDataProcessingIncludes.h>
 
-// The sample uses the std::list.
 #include <list>
 #include <algorithm>
 #include <thread>
@@ -18,6 +17,7 @@
 #include "../include/sel_interface.h"     // Defines SEL controller commands
 #include "../include/gripper_interface.h" // Defines gripper commands
 #include "../include/datastore.h"         // Parses and stores system data for easy access
+#include "../include/scanner.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 
     // Camera parameters
     int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
-    int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
+    int camera_y_alignment = AxisAlignment::INVERTED; // Camera y with respect to robot y
     int resolution_x = 1280;  // px
     int resolution_y = 1024; // px
     double tolerance = 1.0; // px
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
     // Scanning parameters (mm)
     double scan_width = 30.0; // mm
-    double scan_speed = 0.0; // mm/s TODO: Implement this
+    double scan_speed = 25.0; // mm/s
     double max_refinement_speed = 25.0; // mm/s
     double refinement_speed_scale_factor = max_refinement_speed / ((std::max)(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
 
@@ -108,16 +108,18 @@ int main(int argc, char* argv[])
         auto& DS = Datastore::getInstance();
 
         // Ensure the end effector starts from the origin
-        SEL_Interface::MoveToPosition({0.0, 0.0});
+        DS.MoveRC(0);
+        DS.waitForZMotionComplete();
+        
+        SEL_Interface::MoveToPosition({0.0, 0.0}, scan_speed);
         DS.waitForMotionComplete();
-        SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 0, 0, 0, 0}, DS.SEL_outputs); // RC to p0
-        SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
-        SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs);
-        // DS.waitForZMotionComplete();
+      
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         Gripper_Interface::MoveTo();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         // Before using any pylon methods, the pylon runtime must be initialized.
         PylonInitialize();
@@ -138,14 +140,12 @@ int main(int argc, char* argv[])
         bool object_detected = false;
         double object_x_px = 0;
         double object_y_px = 0;
-        int num_passes = std::ceil(workspace_x / scan_width) + 1;
+
+        Path path = buildScanPath(workspace_x, workspace_y, scan_width);
 
         // Begin scan
-        for (int i = 0; i < num_passes*2; ++i) {
-            double x_coordinate = (std::min)(scan_width * (i/2), workspace_x);
-            double y_coordinate = workspace_y * (((i+1)/2) % 2);
-            SEL_Interface::MoveToPosition({x_coordinate, workspace_y});
-
+        for (auto& point : path) {
+            SEL_Interface::MoveToPosition(point, scan_speed);
             DS.UpdateSEL();
             // Continously get camera data and check if move has completed
             while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
@@ -167,6 +167,7 @@ int main(int argc, char* argv[])
                             // Calling halt instead of breaking here allows the camera to continue to take images
                             // while the axis drifts, ensuring that the last pictures is taken while the camera
                             // is stable
+                            Logger::warn("Detected object! Halting in place");
                             SEL_Interface::HaltAll();
                         }
                         else {
@@ -232,10 +233,10 @@ int main(int argc, char* argv[])
 
                 double x_err = object_x_px - resolution_x/2;
                 if (std::abs(x_err) > tolerance) {
-                    auto jog_direction = static_cast<SEL_Interface::Direction>((x_err > 0 ? 1 : -1) * camera_x_alignment * -1);
+                    auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((x_err > 0 ? 1 : -1) * camera_x_alignment * -1, 0)); //TODO: Clean this up
                     int jog_speed = std::abs(x_err) * refinement_speed_scale_factor;
                     jog_speed = (std::max)(jog_speed, 1);
-                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed);
+                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed); // TODO: Unsure if I can write multiple jog commands over the top of each other like this
                 }
                 else {
                     SEL_Interface::Halt(SEL_Interface::Axis::X);
@@ -243,7 +244,8 @@ int main(int argc, char* argv[])
 
                 double y_err = object_y_px - resolution_y/2;
                 if (std::abs(y_err) > tolerance) {
-                    auto jog_direction = static_cast<SEL_Interface::Direction>((y_err > 0 ? 1 : -1) * camera_y_alignment * -1);
+                    auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((y_err > 0 ? 1 : -1) * camera_y_alignment * -1,0));
+
                     int jog_speed = std::abs(y_err) * refinement_speed_scale_factor;
                     jog_speed = (std::max)(jog_speed, 1);
                     SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, jog_speed);
@@ -265,19 +267,16 @@ int main(int argc, char* argv[])
             SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y});
             DS.waitForMotionComplete();
             // Z down to mate with connector
-            SEL_Interface::SetOutputs({306, 305, 304, 303}, {1, 1, 1, 1}, DS.SEL_outputs);
-            SEL_Interface::SetOutputs({302}, {1}, DS.SEL_outputs);
-            SEL_Interface::SetOutputs({302}, {0}, DS.SEL_outputs);
-            std::this_thread::sleep_for(std::chrono::milliseconds(15000)); //TODO: Replace with DS.waitForZMotionComplete();
+            DS.MoveRC(10);
+            DS.waitForZMotionComplete();
 
             // Open gripper
             Gripper_Interface::Open();
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
             // Z up
-            SEL_Interface::SetOutputs({306, 305, 304, 303}, {0, 0, 0, 0}, DS.SEL_outputs);
-            std::this_thread::sleep_for(std::chrono::milliseconds(15000));
-            // DS.waitForZMotionComplete();
+            DS.MoveRC(0);
+            DS.waitForZMotionComplete();
         }
 
         // Stop the image processing.
@@ -287,7 +286,7 @@ int main(int argc, char* argv[])
 
     catch (const GenericException& e)
     {
-        // Error handling
+        SEL_Interface::HaltAll();
         std::cerr << "An exception occurred (likely pylon) - " <<std::endl << e.GetDescription() <<std::endl;
         exitCode = 1;
         throw;
@@ -295,6 +294,7 @@ int main(int argc, char* argv[])
 
     catch (const std::exception& e)
     {
+        SEL_Interface::HaltAll();
         std::cout << "Exception caught :" << e.what() << std::endl;
         exitCode = 1;
         throw;

@@ -102,12 +102,10 @@ public:
 
     bool zMotionComplete() {
         auto inputs = SEL_Interface::ReadInputs();
-        std::vector<std::string> acceptable_values {"8", "9", "A", "B", "C", "D", "E", "F"};
-        Logger::debug("Reading value " + std::to_string(inputs[11]) + " for SEL inputs 19-16");
-        auto it = std::find(acceptable_values.begin(), acceptable_values.end(), std::to_string(inputs[11]));
-        if (it == acceptable_values.end())
-            return false;
-        return true;
+        Logger::debug("Reading value " + std::string(1, inputs[11]) + " for SEL inputs 19-16");
+        if (inputs[11] > '8')
+            return true;
+        return false;
     }
 
     void waitForZMotionComplete() {

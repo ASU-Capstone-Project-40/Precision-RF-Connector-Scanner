@@ -4,21 +4,24 @@
 SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;
 
+
+
 int main()
 {
     double workspace_x = 330.0;
     double workspace_y = 700.0;
     double scan_width = 20.0;
-    int num_passes = std::ceil(workspace_x / scan_width) + 1;
-    std::cout << "workspace dimensions: " << workspace_x << ", " << workspace_y << std::endl;
-    std::cout << "Scan width: " << scan_width << std::endl;
-    std::cout << "num passes: " << num_passes << std::endl;
+    
     // Begin scan
-    for (int i = 0; i < num_passes*2; ++i) {
-        double x_coordinate = std::min(scan_width * (i/2), workspace_x);
-        double y_coordinate = workspace_y * (((i+1)/2) % 2);
-        std::cout << "point " << i << ": (" << x_coordinate << ", " << y_coordinate << ")" << std::endl;
+    std::vector<std::vector<double>> scan_path = buildScanPath(workspace_x, workspace_y, scan_width);
+    for (auto& point : scan_path) {
+        std::cout << "(" << std::flush;
+        for (auto& coordinate : point) {
+            std::cout << coordinate << " " << std::flush;
+        }
+        std::cout << ") " << std::flush;
     }
+
 
     // Logger::setLogLevel("debug");
 
