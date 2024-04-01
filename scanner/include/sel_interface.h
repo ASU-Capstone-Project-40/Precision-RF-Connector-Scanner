@@ -25,7 +25,7 @@ namespace SEL_Interface
     static std::string inq = "?99"; // The beginning of an inquiry command
     static std::string term = "@@\r\n"; // The end of all commands
 
-        /**
+    /**
      * Formats a numeric value into a string with a given length and precision.
      * \param value Value to convert - must be a number type
      * \param length Length of string to output

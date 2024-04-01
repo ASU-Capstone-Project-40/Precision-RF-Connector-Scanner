@@ -1,12 +1,6 @@
-#include <WinSock2.h>
-// Include files to use the pylon API.
-#include <pylon/PylonIncludes.h>
 
-// Extend the pylon API for using pylon data processing.
-#include <pylondataprocessing/PylonDataProcessingIncludes.h>
 
-#include <list>
-#include <algorithm>
+
 #include <thread>
 
 #include "../include/ResultData.h"
@@ -110,10 +104,10 @@ int main(int argc, char* argv[])
         // Ensure the end effector starts from the origin
         DS.MoveRC(0);
         DS.waitForZMotionComplete();
-        
+
         SEL_Interface::MoveToPosition({0.0, 0.0}, scan_speed);
         DS.waitForMotionComplete();
-      
+
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
@@ -147,89 +141,43 @@ int main(int argc, char* argv[])
         for (auto& point : path) {
             SEL_Interface::MoveToPosition(point, scan_speed);
             DS.UpdateSEL();
-            // Continously get camera data and check if move has completed
-            while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+            while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) { // Continously get camera data and check if move has completed
                 Logger::warn("In the scan loop, updating SEL");
                 DS.UpdateSEL();
 
                 // Get camera data
-                Logger::warn("In the scan loop, getting image");
-                if (resultCollector.GetWaitObject().Wait(200)) // Blocks until image received, wait is ms
-                {
-                    ResultData result;
-                    resultCollector.GetResultData(result);
-                    if (!result.hasError) {
-                        if (!result.scores.empty()) {
-                            object_detected = true;
-                            object_x_px = result.positions_px[0].X;
-                            object_y_px = result.positions_px[0].Y;
-
-                            // Calling halt instead of breaking here allows the camera to continue to take images
-                            // while the axis drifts, ensuring that the last pictures is taken while the camera
-                            // is stable
-                            Logger::warn("Detected object! Halting in place");
-                            SEL_Interface::HaltAll();
-                        }
-                        else {
-                            if(object_detected) {
-                                Logger::error("Lost sight of object after initial detection!");
-                            }
-                        }
-                    }
-                    else {
-                        std::cout << "An error occurred during processing recipe: " << result.errorMessage <<std::endl;
-                    }
-                }
-                else
-                {
-                    throw RUNTIME_EXCEPTION("Result timeout");
+                ResultData result; // Potentially could initialize this above while loop
+                if(!detectObject(resultCollector, result)) {
+                    continue;
                 }
 
+                SEL_Interface::HaltAll();
+                object_detected = true;
+                object_x_px = result.positions_px[0].X;
+                object_y_px = result.positions_px[0].Y;
             }
+
             // Robot is now stationary, whether through halting or arriving at target
             if (object_detected)
                 break;
-
-            // No object detected but scan still in progress, continue to next pass
         }
-        // At this point, scan is complete
 
+        // At this point, scan is complete
         if (object_detected) {
             // Refine position to place camera directly over connector
             bool within_tolerance = false;
             while (!within_tolerance || DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
                 Logger::debug("Inside refinement loop, taking an image...");
-                // Take another image TODO: Make this a function
-                if (resultCollector.GetWaitObject().Wait(200)) {
-                    ResultData result;
-                    resultCollector.GetResultData(result);
-                    if (!result.hasError)
-                    {
-                        if (!result.scores.empty()) {
-                            object_x_px = result.positions_px[0].X;
-                            object_y_px = result.positions_px[0].Y;
-                        }
-                        else
-                        {
-                            SEL_Interface::HaltAll();
-                            Logger::error("No object detected in refinement loop! Halting motion.");
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        SEL_Interface::HaltAll();
-                        Logger::error("An error occurred during processing recipe. Halting Motion. ");
-                        std::cout << result.errorMessage << std::endl;
-                        continue;
-                    }
-                }
-                else
+
+                ResultData result;
+                if(!detectObject(resultCollector, result))
                 {
                     SEL_Interface::HaltAll();
-                    Logger::error("Image acquisition timed out in refinement loop. Halting motion");
                     continue;
                 }
+
+                object_x_px = result.positions_px[0].X;
+                object_y_px = result.positions_px[0].Y;
 
                 double x_err = object_x_px - resolution_x/2;
                 if (std::abs(x_err) > tolerance) {

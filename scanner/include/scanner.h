@@ -1,7 +1,22 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
+#include <WinSock2.h>
+// Include files to use the pylon API.
+#include <pylon/PylonIncludes.h>
+
+// Extend the pylon API for using pylon data processing.
+#include <pylondataprocessing/PylonDataProcessingIncludes.h>
+
 #include <vector>
+#include <list>
+#include <algorithm>
+
+#include "logging.h"
+
+// Namespaces for using pylon objects
+using namespace Pylon;
+using namespace Pylon::DataProcessing;
 
 typedef std::vector<std::vector<double>> Path;
 
@@ -14,6 +29,36 @@ Path buildScanPath (double x_length, double y_length, double width) {
         path.push_back({x_coordinate, y_coordinate});
     }
     return path;
+}
+
+/**
+ * Checks if an object is recognized in the camera image.
+ * PylonInitialize() and recipe.Start() must have been called prior.
+ * \param resultCollector a RecipeOutputObserver tied to the recipe using
+ * recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append);
+ * \param result a default-initialized ResultData object to be filled with data if an object is recognized
+ * \returns true if an object is recognized, false if not.
+*/
+bool detectObject(RecipeOutputObserver resultCollector, ResultData& result) {
+    if (!resultCollector.GetWaitObject().Wait(200)) {// Blocks until image received, wait is ms
+        Logger::error("Scanner::detectObject: Camera data result timeout");
+        return false;
+    }
+
+    resultCollector.GetResultData(result);
+
+    if (result.hasError) {
+        std::cout << "Scanner::detectObject: An error occurred while processing recipe: " << result.errorMessage << std::endl; // Todo: Make this work with Logger
+        return false;
+    }
+
+    if (result.scores.empty()) {
+        Logger::debug("Scanner::detectObject: No object detected...");
+        return false;
+    }
+
+    Logger::debug("Detected object at (" + result.positions_px[0].X + ", " + result.positions_px[0].Y + ")");
+    return true;
 }
 
 #endif // SCANNER_H
