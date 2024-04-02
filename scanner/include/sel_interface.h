@@ -48,7 +48,7 @@ namespace SEL_Interface
             throw std::runtime_error("SEL_Interface::format: value " + std::to_string(value) + " is too large to convert into this format");
         }
 
-        // Logger::debug("SEL_Interface::format: Successfully converted value: " + result);
+        Logger::verbose("SEL_Interface::format: Successfully converted value: " + result);
         return result;
     }
 
@@ -189,7 +189,7 @@ namespace SEL_Interface
      * Stops X and Y axes.
     */
     void HaltAll() {
-        Logger::info("SEL_Interface::HaltAll: Halting all axes");
+        Logger::verbose("SEL_Interface::HaltAll: Halting all axes");
         Halt(Axis::XY);
     }
 

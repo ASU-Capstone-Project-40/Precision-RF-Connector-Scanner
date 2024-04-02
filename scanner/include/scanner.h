@@ -39,7 +39,7 @@ Path buildScanPath (double x_length, double y_length, double width) {
  * \param result a default-initialized ResultData object to be filled with data if an object is recognized
  * \returns true if an object is recognized, false if not.
 */
-bool detectObject(RecipeOutputObserver resultCollector, ResultData& result) {
+bool detectObject(RecipeOutputObserver& resultCollector, ResultData& result) {
     if (!resultCollector.GetWaitObject().Wait(200)) {// Blocks until image received, wait is ms
         Logger::error("Scanner::detectObject: Camera data result timeout");
         return false;
@@ -53,11 +53,11 @@ bool detectObject(RecipeOutputObserver resultCollector, ResultData& result) {
     }
 
     if (result.scores.empty()) {
-        Logger::debug("Scanner::detectObject: No object detected...");
+        Logger::verbose("Scanner::detectObject: No object detected...");
         return false;
     }
 
-    Logger::debug("Detected object at (" + result.positions_px[0].X + ", " + result.positions_px[0].Y + ")");
+    Logger::verbose("Detected object at (" + std::to_string(result.positions_px[0].X) + ", " + std::to_string(result.positions_px[0].Y) + ")");
     return true;
 }
 

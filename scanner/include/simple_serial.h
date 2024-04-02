@@ -32,7 +32,7 @@ public:
      */
     void writeString(std::string s)
     {
-        Logger::debug("Sending: " + s);
+        Logger::verbose("Sending: " + s);
         boost::asio::write(serial,boost::asio::buffer(s.c_str(),s.size()));
     }
 
@@ -73,7 +73,7 @@ public:
      */
     std::string readLine()
     {
-        Logger::debug("Receiving: ");
+        Logger::verbose("Receiving: ");
         //Reading data char by char, code is optimized for simplicity, not speed
         using namespace boost;
         char c;
@@ -81,14 +81,14 @@ public:
         for(;;)
         {
             asio::read(serial,asio::buffer(&c,1));
-            Logger::debug_stream(c);
+            Logger::verbose_stream(c);
 
             switch(c)
             {
                 case '\r':
                     break;
                 case '\n':
-                    Logger::debug(""); // Send an end line since the above debug_stream does not
+                    Logger::verbose(""); // Send an end line since the above verbose_stream does not
                     return result;
                 default:
                     result+=c;
@@ -103,7 +103,7 @@ public:
      */
     void readBytes()
     {
-        Logger::debug("Receiving: ");
+        Logger::verbose("Receiving: ");
         //Reading data char by char, code is optimized for simplicity, not speed
         using namespace boost;
         unsigned char c;
@@ -123,7 +123,7 @@ public:
      */
     std::vector<unsigned char> readBytes(size_t data_length)
     {
-        Logger::debug("Receiving: ");
+        Logger::verbose("Receiving: ");
         using namespace boost;
         std::vector<unsigned char> data;
         asio::read(serial,asio::buffer(&data, data_length));
@@ -138,7 +138,7 @@ public:
     {
         Logger::info("SimpleSerial::Close: Closing serial port on " + port);
         serial.close();
-        Logger::debug("SimpleSerial::Close: Success");
+        Logger::verbose("SimpleSerial::Close: Success");
     }
 
 private:

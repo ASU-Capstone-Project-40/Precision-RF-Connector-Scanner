@@ -11,7 +11,8 @@ public:
     ERR = 1,
     WARN = 2,
     INFO = 3,
-    DEBUG = 4
+    DEBUG = 4,
+    VERBOSE = 5,
     };
 
     static void setLogLevel(int level) {
@@ -43,12 +44,14 @@ public:
             log_level_ = Level::OFF;
         else if (level == "err" || level == "error")
             log_level_ = Level::ERR;
-        else if (level == "warn")
+        else if (level == "warn" |level == "w")
             log_level_ = Level::WARN;
-        else if (level == "info")
+        else if (level == "info" || level == "i")
             log_level_ = Level::INFO;
-        else if (level == "debug" || level == "verbose")
+        else if (level == "debug" || level == "d" )
             log_level_ = Level::DEBUG;
+        else if (level == "verbose" | level == "v")
+            log_level_ = Level::VERBOSE;
         else
             warn("Provided log level '" + level + "' is not recognized.");
     }
@@ -61,7 +64,7 @@ public:
 
     static void warn(const std::string& message) {
         if (log_level_ >= Level::WARN) {
-            std::cout << YELLOW << "[WARN] " << message << RESET << std::endl;
+            std::cout << ORANGE << "[WARN] " << message << RESET << std::endl;
         }
     }
 
@@ -73,12 +76,19 @@ public:
 
     static void debug(const std::string& message) {
         if (log_level_ >= Level::DEBUG) {
-            std::cout << BLUE << "[DEBUG] " << message << RESET << std::endl;
+            std::cout << YELLOW << "[DEBUG] " << message << RESET << std::endl;
         }
     }
 
-    static void debug_stream(char c){
-        if (log_level_ >= Level::DEBUG) {
+    static void verbose(const std::string& message) {
+        if (log_level_ >= Level::VERBOSE) {
+            std::cout << BLUE << "[DEBUG] " << message << RESET << std::endl;
+        }
+    }
+        
+
+    static void verbose_stream(char c){
+        if (log_level_ >= Level::VERBOSE) {
             std::cout << BLUE << c << RESET << std::flush;
         }
     }
@@ -86,9 +96,10 @@ public:
 private:
     static int log_level_;
     static inline const std::string RED = "\033[31m";       // Red text
-    static inline const std::string YELLOW = "\033[33m";   // Yellow text
-    static inline const std::string BLUE = "\033[34m";    // Blue text
-    static inline const std::string RESET = "\033[0m";   // Reset
+    static inline const std::string ORANGE = "\033[32m";   // Orange text 
+    static inline const std::string YELLOW = "\033[33m";  // Yellow text
+    static inline const std::string BLUE = "\033[34m";   // Blue text
+    static inline const std::string RESET = "\033[0m";  // Reset
 };
 
 #endif // LOGGING_H

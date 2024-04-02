@@ -11,7 +11,7 @@ namespace Gripper_Interface
     bool CheckResponse(unsigned char* expected_response) {
         std::vector<unsigned char> response;
         response = Gripper->readBytes(sizeof(expected_response));
-        Logger::debug("Reading " + std::to_string(sizeof(expected_response)) + " bytes from the gripper. "
+        Logger::verbose("Reading " + std::to_string(sizeof(expected_response)) + " bytes from the gripper. "
             "This may block forever if the expected response is not received."
         );
 
@@ -33,7 +33,7 @@ namespace Gripper_Interface
     bool CheckResponseVector(std::vector<unsigned char> expected_response) {
         std::vector<unsigned char> response;
 
-        Logger::debug("Reading " + std::to_string(expected_response.size()) + " bytes from the gripper. "
+        Logger::verbose("Reading " + std::to_string(expected_response.size()) + " bytes from the gripper. "
             "This may block forever if the expected response is not received."
         );
 

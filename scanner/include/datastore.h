@@ -56,7 +56,7 @@ public:
         std::string pos_string = status_msg.substr(idx + 5, position_data_length);
         y_axis.position_ = std::stod(pos_string);
 
-        Logger::debug(std::string("Y Axis State:\r\n") +
+        Logger::verbose(std::string("Y Axis State:\r\n") +
                                   "Enabled:    " + std::to_string(y_axis.enabled_) + "\r\n" +
                                   "Homed:      " + std::to_string(y_axis.homed_) + "\r\n" +
                                   "In motion:  " + std::to_string(y_axis.in_motion_) + "\r\n" +
@@ -84,7 +84,7 @@ public:
         pos_string = status_msg.substr(idx + 5, position_data_length);
         x_axis.position_ = std::stod(pos_string);
 
-        Logger::debug(std::string("X Axis State:\r\n") +
+        Logger::verbose(std::string("X Axis State:\r\n") +
                                   "Enabled:    " + std::to_string(x_axis.enabled_) + "\r\n" +
                                   "Homed:      " + std::to_string(x_axis.homed_) + "\r\n" +
                                   "In motion:  " + std::to_string(x_axis.in_motion_) + "\r\n" +
@@ -102,8 +102,8 @@ public:
 
     bool zMotionComplete() {
         auto inputs = SEL_Interface::ReadInputs();
-        Logger::debug("Reading value " + std::string(1, inputs[11]) + " for SEL inputs 19-16");
-        if (inputs[11] > '8')
+        Logger::verbose("Reading value " + std::string(1, inputs[11]) + " for SEL inputs 19-16");
+        if (inputs[11] >= '8')
             return true;
         return false;
     }
@@ -137,7 +137,7 @@ public:
         for (auto val : position_values) {
             debug_position_values += val ? "1" : "0";
         }
-        Logger::debug("Attempting to move RC to point " + std::to_string(point) + " [" + debug_position_values + "]");
+        Logger::verbose("Attempting to move RC to point " + std::to_string(point) + " [" + debug_position_values + "]");
 
         SEL_Interface::SetOutputs(position_ports, position_values, SEL_outputs); // Set position
         SEL_Interface::SetOutputs({302}, {1}, SEL_outputs); // Command start
