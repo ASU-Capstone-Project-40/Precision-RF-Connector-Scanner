@@ -100,6 +100,11 @@ namespace SEL_Interface
         return resp;
     }
 
+    std::string GetResponse() {
+        std::string resp = SEL->readLine();
+        return resp;
+    }
+
 
             /******************************************************
              ***               Execution Commands               ***
@@ -112,13 +117,11 @@ namespace SEL_Interface
      * Example command: !99HOM0300@@
      * Example response: #99HOM@@
      */
-    std::string Home(Axis axis) {
+    void Home(Axis axis) {
         std::string code = "HOM";
         std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + "00" + term;
         SEL->writeString(cmd);
-        std::string resp = SEL->readLine();
-        return resp;
     }
 
     /**
@@ -127,7 +130,7 @@ namespace SEL_Interface
      * Example command: !99 MOV 03 0000 0200 00050.00 00075.00 @@
      * Example response: #99MOV@@
      */
-    std::string MoveToPosition(std::vector<double> joint_state, unsigned int velocity = 50, double acceleration = 0.0) {
+    void MoveToPosition(std::vector<double> joint_state, unsigned int velocity = 50, double acceleration = 0.0) {
         if (acceleration < 0) {
             Logger::warn("SEL_Interface::MoveToPosition: A negative acceleration was provided. Using controller default value instead.");
             acceleration = 0.0;
@@ -161,8 +164,6 @@ namespace SEL_Interface
 
         cmd += term;
         SEL->writeString(cmd);
-        std::string resp = SEL->readLine();
-        return resp;
     }
 
     /**
@@ -172,16 +173,11 @@ namespace SEL_Interface
      * Example command: !99HLT03@@
      * Example response:  #99HLT@@
      */
-    std::string Halt(Axis axis) {
+    void Halt(Axis axis) {
         std::string code = "HLT";
         std::string axis_pattern_string = format<int>(axis, 2, 0);
         std::string cmd = exec + code + axis_pattern_string + term;
         SEL->writeString(cmd);
-        std::string resp = SEL->readLine();
-        if (resp !=  "#99HLT@@") {
-            Logger::warn("SEL_Interface::Halt: Expected response #99HLT@@, recieved " + resp);
-        }
-        return resp;
     }
 
 
@@ -202,7 +198,7 @@ namespace SEL_Interface
      * Example command: !99JOG030.3000501@@
      * Example response: #99JOG@@
     */
-    std::string Jog(Axis axis, Direction direction, uint16_t velocity = 50, double acceleration = 0.3) {
+    void Jog(Axis axis, Direction direction, uint16_t velocity = 50, double acceleration = 0.3) {
         std::string code = "JOG";
         std::string axis_pattern = format<int>(axis, 2, 0);
         std::string acceleration_string = format<double>(acceleration, 4, 2);
@@ -210,11 +206,6 @@ namespace SEL_Interface
         std::string direction_string = std::to_string(direction);
         std::string cmd = exec + code + axis_pattern + acceleration_string + velocity_string + direction_string + term;
         SEL->writeString(cmd);
-        std::string resp = SEL->readLine();
-        if (resp !=  "#99JOG@@") {
-            Logger::warn("SEL_Interface::Halt: Received unexpected response `" + resp + "` to command `" + cmd + "`");
-        }
-        return resp;
     }
 
     // TODO: Make this use uints where appropriate
@@ -272,11 +263,6 @@ namespace SEL_Interface
             std::string cmd = exec + code + group_string + group_values_string + term;
 
             SEL->writeString(cmd);
-            std::string resp = SEL->readLine();
-            if (resp != "#99OTS@@") {
-                Logger::warn("SEL_Interface::SetOutputs: Received unexpected response `" + resp +
-                                         "` to command `" + cmd + "`");
-            }
         }
     }
 };
