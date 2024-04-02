@@ -20,7 +20,7 @@ public:
 
     // Implements IOutputObserver::OutputDataPush.
     // This method is called when an output of the CRecipe pushes data out.
-    // The call of the method can be performed by any thread of the thread pool of the recipe.
+    // The call of the method can be performed by any thread of the thread pool of the recipe.   
     void OutputDataPush(
             Pylon::DataProcessing::CRecipe& recipe,
             Pylon::DataProcessing::CVariantContainer valueContainer,
@@ -38,11 +38,20 @@ public:
         // Add data to the result queue in a thread-safe way.
         {
             Pylon::AutoLock scopedLock(m_memberLock);
+            if (m_queue.size() > 0)
+            {
+                m_queue.clear();
+            }
             m_queue.emplace_back(currentResultData);
         }
 
         // Signal that data is ready.
         m_waitObject.Signal();
+    }
+
+    void ClearOutputData() {
+        Pylon::AutoLock scopedLock(m_memberLock);
+        m_queue.clear();
     }
 
     // Get the wait object for waiting for data.

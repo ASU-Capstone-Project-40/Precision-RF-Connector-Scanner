@@ -40,7 +40,7 @@ Path buildScanPath (double x_length, double y_length, double width) {
  * \returns true if an object is recognized, false if not.
 */
 bool detectObject(RecipeOutputObserver& resultCollector, ResultData& result) {
-    if (!resultCollector.GetWaitObject().Wait(200)) {// Blocks until image received, wait is ms
+    if (!resultCollector.GetWaitObject().Wait(75)) {// Blocks until image received, wait is ms
         Logger::error("Scanner::detectObject: Camera data result timeout");
         return false;
     }

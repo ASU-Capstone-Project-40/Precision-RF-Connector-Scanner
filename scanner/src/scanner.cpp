@@ -47,12 +47,12 @@ int main(int argc, char* argv[])
     // Workspace parameters
     double workspace_x = 250.0;  // mm
     double workspace_y = 450.0; // mm
-    double camera_to_gripper_x = 163.8173; // mm
-    double camera_to_gripper_y = 7.46506; // mm
+    double camera_to_gripper_x = -163.8173; // mm
+    double camera_to_gripper_y = 0.0; // mm
 
     // Scanning parameters (mm)
     double scan_width = 30.0; // mm
-    double scan_speed = 50.0; // mm/s
+    double scan_speed = 30.0; // mm/s
     double max_refinement_speed = 1.0; // mm/s
     double refinement_speed_scale_factor = max_refinement_speed / ((std::max)(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
 
@@ -106,13 +106,13 @@ int main(int argc, char* argv[])
         DS.MoveRC(0);
         DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({0.0, 0.0}, scan_speed);
+        SEL_Interface::MoveToPosition({0.0, 0.0});
         DS.waitForMotionComplete();
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Gripper_Interface::MoveTo();
+        Gripper_Interface::Open();
 
         // Before using any pylon methods, the pylon runtime must be initialized.
         PylonInitialize();
@@ -136,21 +136,31 @@ int main(int argc, char* argv[])
 
         Path path = buildScanPath(workspace_x, workspace_y, scan_width);
 
+        std::vector<double> detected_location; // The position of the end effector when the object was detected
+
         // Begin scan
         Logger::debug("Entering Scan Loop");
         for (auto& point : path) {
             SEL_Interface::MoveToPosition(point, scan_speed);
             DS.UpdateSEL();
-            
+
+            ResultData result;
             while(DS.x_axis.in_motion_ || DS.y_axis.in_motion_) { // Continously get camera data and check if move has completed
                 DS.UpdateSEL();
 
                 // Get camera data
-                ResultData result; // Potentially could initialize this above while loop
-                if(!detectObject(resultCollector, result)) {
-                    continue;
+                if (!object_detected)
+                {
+                    if(!detectObject(resultCollector, result)) {
+                        continue;
+                    }
                 }
                 
+                if (detected_location.empty()) {
+                    detected_location.push_back(DS.x_axis.position_);
+                    detected_location.push_back(DS.y_axis.position_);
+                }
+
                 SEL_Interface::HaltAll();
                 object_detected = true;
                 object_x_px = result.positions_px[0].X;
@@ -165,12 +175,17 @@ int main(int argc, char* argv[])
 
         // At this point, scan is complete
         if (object_detected) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            resultCollector.ClearOutputData();
+
+            SEL_Interface::MoveToPosition(detected_location, scan_speed);
+            DS.waitForMotionComplete();
+
             // Refine position to place camera directly over connector
             bool within_tolerance = false;
             Logger::debug("Entering refinement loop...");
+            ResultData result;
             while (!within_tolerance || DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
-
-                ResultData result;
                 if(!detectObject(resultCollector, result)) {
                     SEL_Interface::HaltAll();
                     continue;
@@ -179,32 +194,30 @@ int main(int argc, char* argv[])
                 object_x_px = result.positions_px[0].X;
                 object_y_px = result.positions_px[0].Y;
 
-                double x_err = object_x_px - resolution_x/2;
-                if (std::abs(x_err) > tolerance) {
+                bool x_within_tolerance = std::abs(object_x_px - resolution_x/2) < tolerance;
+                if (!x_within_tolerance && !DS.x_axis.in_motion_) {
+                    double x_err = object_x_px - resolution_x/2;
                     auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((x_err > 0 ? 1 : -1) * camera_x_alignment * -1, 0)); //TODO: Clean this up
-                    int jog_speed = std::abs(x_err) * refinement_speed_scale_factor;
-                    jog_speed = (std::max)(jog_speed, 1);
-                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, jog_speed); // TODO: Unsure if I can write multiple jog commands over the top of each other like this
+                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, 1);
                 }
-                else {
+                else if (x_within_tolerance && DS.x_axis.in_motion_) {
                     SEL_Interface::Halt(SEL_Interface::Axis::X);
                 }
 
-                double y_err = object_y_px - resolution_y/2;
-                if (std::abs(y_err) > tolerance) {
+
+                bool y_within_tolerance = std::abs(object_y_px - resolution_y/2) < tolerance;
+                if (!y_within_tolerance && !DS.y_axis.in_motion_) {
+                    double y_err = object_y_px - resolution_y/2;
                     auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((y_err > 0 ? 1 : -1) * camera_y_alignment * -1,0));
-                    int jog_speed = std::abs(y_err) * refinement_speed_scale_factor;
-                    jog_speed = (std::max)(jog_speed, 1);
-                    SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, jog_speed);
+                    SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, 1);
                 }
-                else {
+                else if (y_within_tolerance && DS.y_axis.in_motion_) {
                     SEL_Interface::Halt(SEL_Interface::Axis::Y);
                 }
 
-                within_tolerance = std::abs(x_err) < tolerance && std::abs(y_err) < tolerance;
+                within_tolerance = x_within_tolerance && y_within_tolerance;
 
                 Logger::info("px: " + std::to_string(result.positions_px[0].X) + ", " + std::to_string(result.positions_px[0].Y));
-                Logger::info("err:" + std::to_string(x_err) + ", " + std::to_string(y_err));
                 std::string tolerance_string = within_tolerance ? "true" : "false";
                 Logger::info("Within tolerance: " + tolerance_string);
                 DS.UpdateSEL();
@@ -216,14 +229,16 @@ int main(int argc, char* argv[])
             }
 
             // Translate xy to place gripper directly over connector
-            SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y});
+            SEL_Interface::MoveToPosition({DS.x_axis.position_ + camera_to_gripper_x, DS.y_axis.position_ + camera_to_gripper_y}, scan_speed);
             DS.waitForMotionComplete();
             // Z down to mate with connector
-            DS.MoveRC(10);
+            DS.MoveRC(15);
             DS.waitForZMotionComplete();
 
             // Open gripper
-            Gripper_Interface::Open();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            Gripper_Interface::Close();
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
             // Z up
@@ -234,6 +249,9 @@ int main(int argc, char* argv[])
         // Stop the image processing.
         recipe.Stop();
         SEL_Interface::MoveToPosition({0, 0});
+        DS.waitForMotionComplete();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Gripper_Interface::Open();
     }
 
     catch (const GenericException& e)
