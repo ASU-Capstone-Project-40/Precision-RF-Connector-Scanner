@@ -40,9 +40,8 @@ int main(int argc, char* argv[])
     // Camera parameters
     int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
     int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
-    int resolution_x = 1280;  // px
-    int resolution_y = 1024; // px
-    double tolerance = 10.0; // px
+    double tolerance = 1.0; // mm
+    double distance_scale_factor = 0.95; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
     double workspace_x = 250.0;  // mm
@@ -54,7 +53,6 @@ int main(int argc, char* argv[])
     double scan_width = 30.0; // mm
     double scan_speed = 30.0; // mm/s
     double max_refinement_speed = 1.0; // mm/s
-    double refinement_speed_scale_factor = max_refinement_speed / ((std::max)(resolution_x, resolution_y) / 2); // Scales the jog speed proportionally to the error
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -131,12 +129,10 @@ int main(int argc, char* argv[])
         recipe.Start();
 
         bool object_detected = false;
-        double object_x_px = 0;
-        double object_y_px = 0;
 
         Path path = buildScanPath(workspace_x, workspace_y, scan_width);
 
-        std::vector<double> detected_location; // The position of the end effector when the object was detected
+        auto position_measurements = MovingAverage();
 
         // Begin scan
         Logger::debug("Entering Scan Loop");
@@ -156,16 +152,13 @@ int main(int argc, char* argv[])
                     }
                 }
                 
-                if (detected_location.empty()) {
-                    detected_location.push_back(DS.x_axis.position_);
-                    detected_location.push_back(DS.y_axis.position_);
-                }
+                double x_err = result.positions_m[0].X * camera_x_alignment * distance_scale_factor;
+                double y_err = result.positions_m[0].Y * camera_y_alignment * distance_scale_factor;
+                std::vector<double> detected_location {DS.x_axis.position_ + x_err, DS.y_axis.position_ + y_err};
+                position_measurements.Add(detected_location);
 
                 SEL_Interface::HaltAll();
                 object_detected = true;
-                object_x_px = result.positions_px[0].X;
-                object_y_px = result.positions_px[0].Y;
-                Logger::info("Detected object at " + std::to_string(object_x_px) + ", " + std::to_string(object_y_px));
             }
 
             // Robot is now stationary, whether through halting or arriving at target
@@ -178,54 +171,45 @@ int main(int argc, char* argv[])
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             resultCollector.ClearOutputData();
 
-            SEL_Interface::MoveToPosition(detected_location, scan_speed);
+            SEL_Interface::MoveToPosition(position_measurements.Average(), scan_speed);
             DS.waitForMotionComplete();
 
             // Refine position to place camera directly over connector
             bool within_tolerance = false;
             Logger::debug("Entering refinement loop...");
             ResultData result;
-            while (!within_tolerance || DS.x_axis.in_motion_ || DS.y_axis.in_motion_) {
+
+            while (!within_tolerance) {
                 if(!detectObject(resultCollector, result)) {
-                    SEL_Interface::HaltAll();
+                    Logger::error("No object detected in refinement loop");
                     continue;
                 }
 
-                object_x_px = result.positions_px[0].X;
-                object_y_px = result.positions_px[0].Y;
+                double x_err = result.positions_m[0].X * camera_x_alignment * distance_scale_factor;
+                double y_err = result.positions_m[0].Y * camera_y_alignment * distance_scale_factor;
+                std::vector<double> detected_location {DS.x_axis.position_ + x_err, DS.y_axis.position_ + y_err};
+                position_measurements.Add(detected_location);
 
-                bool x_within_tolerance = std::abs(object_x_px - resolution_x/2) < tolerance;
-                if (!x_within_tolerance && !DS.x_axis.in_motion_) {
-                    double x_err = object_x_px - resolution_x/2;
-                    auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((x_err > 0 ? 1 : -1) * camera_x_alignment * -1, 0)); //TODO: Clean this up
-                    SEL_Interface::Jog(SEL_Interface::Axis::X, jog_direction, 1);
-                }
-                else if (x_within_tolerance && DS.x_axis.in_motion_) {
-                    SEL_Interface::Halt(SEL_Interface::Axis::X);
-                }
+                auto position = position_measurements.Average();
+                auto object_x_m = position[0];
+                auto object_y_m = position[1];
+                within_tolerance = sqrt(object_x_m * object_x_m + object_y_m * object_y_m) < tolerance;
 
-
-                bool y_within_tolerance = std::abs(object_y_px - resolution_y/2) < tolerance;
-                if (!y_within_tolerance && !DS.y_axis.in_motion_) {
-                    double y_err = object_y_px - resolution_y/2;
-                    auto jog_direction = static_cast<SEL_Interface::Direction>((std::max)((y_err > 0 ? 1 : -1) * camera_y_alignment * -1,0));
-                    SEL_Interface::Jog(SEL_Interface::Axis::Y, jog_direction, 1);
-                }
-                else if (y_within_tolerance && DS.y_axis.in_motion_) {
-                    SEL_Interface::Halt(SEL_Interface::Axis::Y);
+                if (within_tolerance) {
+                    break;
                 }
 
-                within_tolerance = x_within_tolerance && y_within_tolerance;
-
-                Logger::info("px: " + std::to_string(result.positions_px[0].X) + ", " + std::to_string(result.positions_px[0].Y));
+                Logger::info("m: " + std::to_string(result.positions_m[0].X) + ", " + std::to_string(result.positions_m[0].Y));
                 std::string tolerance_string = within_tolerance ? "true" : "false";
                 Logger::info("Within tolerance: " + tolerance_string);
-                DS.UpdateSEL();
 
-                if (DS.x_axis.position_ > workspace_x || DS.y_axis.position_ > workspace_y) {
-                    SEL_Interface::HaltAll();
-                    throw RUNTIME_EXCEPTION("End effector detected leaving the workspace!");
+                if (object_x_m > workspace_x || object_y_m > workspace_y) {
+                    Logger::error("Invalid target position: " + std::to_string(object_x_m) + ", " + std::to_string(object_y_m));
+                    continue;
                 }
+                
+                SEL_Interface::MoveToPosition(position, 10);
+                DS.waitForMotionComplete();
             }
 
             // Translate xy to place gripper directly over connector

@@ -149,7 +149,7 @@ namespace SEL_Interface
 
         if (axis_positions.size() < 1) {
             Logger::error("SEL_Interface::MoveToPosition: No axes commanded.");
-            return "";
+            return;
         }
 
         std::string axis_pattern_string = format<int>(axis_pattern, 2);

@@ -57,8 +57,50 @@ bool detectObject(RecipeOutputObserver& resultCollector, ResultData& result) {
         return false;
     }
 
-    Logger::verbose("Detected object at (" + std::to_string(result.positions_px[0].X) + ", " + std::to_string(result.positions_px[0].Y) + ")");
+    Logger::info("px: (" + std::to_string(result.positions_px[0].X) + ", " + std::to_string(result.positions_px[0].Y) + ")");
+    Logger::info("m : (" + std::to_string(result.positions_m[0].X) + ", " + std::to_string(result.positions_m[0].Y) + ")");
     return true;
 }
+
+// TODO: Enforce point typing
+class MovingAverage {
+public:    
+    MovingAverage(size_t range = 10) { 
+        this->range = range;
+    }
+
+    void Add(std::vector<double> measurement) {
+        if (this->measurements.size() == this->range) {
+            this->measurements.erase(this->measurements.begin());
+        }
+        this->measurements.push_back(measurement);
+    }
+
+    std::vector<double> Average() {
+        auto num = this->measurements.size();
+        if (num < 1) {
+            throw std::runtime_error("Cannot get average, Moving Average has no measurements yet");
+        }
+        std::vector<double> average;
+        for (auto measurement : this->measurements) {
+            average[0] += measurement[0];
+            average[1] += measurement[1];
+        }
+        average[0] /= num;
+        average[1] /= num;
+        return average;
+    }
+
+    std::vector<double> Latest() {
+        if (this->measurements.size() < 1) {
+            throw std::runtime_error("Cannot get latest, Moving Average has no measurements yet");
+        }
+        return this->measurements.back();
+    }
+
+private:
+    size_t range;
+    std::vector<std::vector<double>> measurements;
+};
 
 #endif // SCANNER_H
