@@ -82,7 +82,7 @@ public:
 
     static void verbose(const std::string& message) {
         if (log_level_ >= Level::VERBOSE) {
-            std::cout << BLUE << "[DEBUG] " << message << RESET << std::endl;
+            std::cout << BLUE << "[VERBOSE] " << message << RESET << std::endl;
         }
     }
         
