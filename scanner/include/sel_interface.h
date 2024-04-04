@@ -134,7 +134,7 @@ namespace SEL_Interface
 
         if (!position.inBounds(workspace_min, workspace_max))
         {
-            std::string err = "Requested position " + position.toString() + " is out of bounds."
+            std::string err = "Requested position " + position.toString() + " is out of bounds.";
             Logger::error(err);
             throw std::runtime_error(err);
         }

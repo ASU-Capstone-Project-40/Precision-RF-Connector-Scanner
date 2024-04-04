@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
     double distance_scale_factor = 0.9; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
-    
+
     double workspace_x = 250.0;  // mm
     double workspace_y = 450.0; // mm
     double camera_to_gripper_x = -163.8173; // mm
@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
                     continue;
                 }
 
-                DS.Update();
+                DS.UpdateSEL();
 
                 double x_err = result.positions_m[0].X * camera_x_alignment * 1000;
                 double y_err = result.positions_m[0].Y * camera_y_alignment * 1000;
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
             }
 
             // Translate xy to place gripper directly over connector
-            DS.Update();
+            DS.UpdateSEL();
             SEL_Interface::MoveToPosition({DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y}, scan_speed);
             DS.waitForMotionComplete();
             // Z down to mate with connector
