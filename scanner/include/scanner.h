@@ -13,12 +13,13 @@
 #include <algorithm>
 
 #include "logging.h"
+#include "point.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
 using namespace Pylon::DataProcessing;
 
-typedef std::vector<std::vector<double>> Path;
+typedef std::vector<Point> Path;
 
 Path buildScanPath (double x_length, double y_length, double width) {
     Path path;
@@ -26,7 +27,7 @@ Path buildScanPath (double x_length, double y_length, double width) {
     for (int i = 0; i < num_passes*2; ++i) {
         double x_coordinate = (std::min)(width * (i/2), x_length);
         double y_coordinate = y_length * (((i+1)/2) % 2);
-        path.push_back({x_coordinate, y_coordinate});
+        path.push_back(Point(x_coordinate, y_coordinate));
     }
     return path;
 }
@@ -61,46 +62,5 @@ bool detectObject(RecipeOutputObserver& resultCollector, ResultData& result) {
     Logger::info("m : (" + std::to_string(result.positions_m[0].X) + ", " + std::to_string(result.positions_m[0].Y) + ")");
     return true;
 }
-
-// TODO: Enforce point typing
-class MovingAverage {
-public:    
-    MovingAverage(size_t range = 10) { 
-        this->range = range;
-    }
-
-    void Add(std::vector<double> measurement) {
-        if (this->measurements.size() == this->range) {
-            this->measurements.erase(this->measurements.begin());
-        }
-        this->measurements.push_back(measurement);
-    }
-
-    std::vector<double> Average() {
-        auto num = this->measurements.size();
-        if (num < 1) {
-            throw std::runtime_error("Cannot get average, Moving Average has no measurements yet");
-        }
-        std::vector<double> average;
-        for (auto measurement : this->measurements) {
-            average[0] += measurement[0];
-            average[1] += measurement[1];
-        }
-        average[0] /= num;
-        average[1] /= num;
-        return average;
-    }
-
-    std::vector<double> Latest() {
-        if (this->measurements.size() < 1) {
-            throw std::runtime_error("Cannot get latest, Moving Average has no measurements yet");
-        }
-        return this->measurements.back();
-    }
-
-private:
-    size_t range;
-    std::vector<std::vector<double>> measurements;
-};
 
 #endif // SCANNER_H

@@ -13,13 +13,9 @@ int main()
     double scan_width = 20.0;
     
     // Begin scan
-    std::vector<std::vector<double>> scan_path = buildScanPath(workspace_x, workspace_y, scan_width);
+    auto scan_path = buildScanPath(workspace_x, workspace_y, scan_width);
     for (auto& point : scan_path) {
-        std::cout << "(" << std::flush;
-        for (auto& coordinate : point) {
-            std::cout << coordinate << " " << std::flush;
-        }
-        std::cout << ") " << std::flush;
+        Logger::debug(point.toString());
     }
 
 

@@ -6,25 +6,25 @@
 #include "logging.h"
 #include <vector>
 #include <algorithm>
+#include "point.h"
 
 class SELMotor {
 public:
     SELMotor() = default;
 
-    bool enabled_{false};
-    bool homed_{false};
-    bool in_motion_{false};
-    std::string error_code_{""};
-    double position_{0.0};
+    bool enabled{false};
+    bool homed{false};
+    bool in_motion{false};
+    std::string error_code{""};
+    double position{0.0};
 };
 
 class Datastore {
 public:
     SELMotor x_axis;
     SELMotor y_axis;
-    uint16_t SEL_velocity = 100; // mm/s
-    uint8_t z_axis = 0;
-
+    bool in_motion{false};
+    Point position{Point(0,0)};
     std::vector<bool> SEL_outputs;
 
     Datastore(const Datastore&) = delete;
@@ -48,25 +48,25 @@ public:
         uint8_t position_data_length = 9;
         uint8_t axis_data_length = 14;
 
-        y_axis.enabled_ = status_msg.at(idx) == '1' ? true : false;
-        y_axis.homed_ = status_msg.at(idx+1) == '1' ? true : false;
-        y_axis.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
-        y_axis.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
+        y_axis.enabled = status_msg.at(idx) == '1' ? true : false;
+        y_axis.homed = status_msg.at(idx+1) == '1' ? true : false;
+        y_axis.in_motion = status_msg.at(idx+2) == '1' ? true : false;
+        y_axis.error_code = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
 
         std::string pos_string = status_msg.substr(idx + 5, position_data_length);
-        y_axis.position_ = std::stod(pos_string);
+        y_axis.position = std::stod(pos_string);
 
         Logger::verbose(std::string("Y Axis State:\r\n") +
-                                  "Enabled:    " + std::to_string(y_axis.enabled_) + "\r\n" +
-                                  "Homed:      " + std::to_string(y_axis.homed_) + "\r\n" +
-                                  "In motion:  " + std::to_string(y_axis.in_motion_) + "\r\n" +
-                                  "Error code: " + y_axis.error_code_ + "\r\n" +
-                                  "Position:   " + std::to_string(y_axis.position_)
+                                  "Enabled:    " + std::to_string(y_axis.enabled) + "\r\n" +
+                                  "Homed:      " + std::to_string(y_axis.homed) + "\r\n" +
+                                  "In motion:  " + std::to_string(y_axis.in_motion) + "\r\n" +
+                                  "Error code: " + y_axis.error_code + "\r\n" +
+                                  "Position:   " + std::to_string(y_axis.position)
         );
 
-        if (y_axis.error_code_ != "00") {
+        if (y_axis.error_code != "00") {
             SEL_Interface::HaltAll();
-            throw std::runtime_error("Y axis encountered error " + y_axis.error_code_);
+            throw std::runtime_error("Y axis encountered error " + y_axis.error_code);
         }
 
         if (num_axes < 2) {
@@ -76,26 +76,29 @@ public:
 
         idx += axis_data_length;
 
-        x_axis.enabled_ = status_msg.at(idx) == '1' ? true : false;
-        x_axis.homed_ = status_msg.at(idx+1) == '1' ? true : false;
-        x_axis.in_motion_ = status_msg.at(idx+2) == '1' ? true : false;
-        x_axis.error_code_ = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
+        x_axis.enabled = status_msg.at(idx) == '1' ? true : false;
+        x_axis.homed = status_msg.at(idx+1) == '1' ? true : false;
+        x_axis.in_motion = status_msg.at(idx+2) == '1' ? true : false;
+        x_axis.error_code = std::string() + status_msg.at(idx+3) + status_msg.at(idx+4);
 
         pos_string = status_msg.substr(idx + 5, position_data_length);
-        x_axis.position_ = std::stod(pos_string);
+        x_axis.position = std::stod(pos_string);
 
         Logger::verbose(std::string("X Axis State:\r\n") +
-                                  "Enabled:    " + std::to_string(x_axis.enabled_) + "\r\n" +
-                                  "Homed:      " + std::to_string(x_axis.homed_) + "\r\n" +
-                                  "In motion:  " + std::to_string(x_axis.in_motion_) + "\r\n" +
-                                  "Error code: " + x_axis.error_code_ + "\r\n" +
-                                  "Position:   " + std::to_string(x_axis.position_)
+                                  "Enabled:    " + std::to_string(x_axis.enabled) + "\r\n" +
+                                  "Homed:      " + std::to_string(x_axis.homed) + "\r\n" +
+                                  "In motion:  " + std::to_string(x_axis.in_motion) + "\r\n" +
+                                  "Error code: " + x_axis.error_code + "\r\n" +
+                                  "Position:   " + std::to_string(x_axis.position)
         );
 
-        if (x_axis.error_code_ != "00") {
+        if (x_axis.error_code != "00") {
             SEL_Interface::HaltAll();
-            throw std::runtime_error("X axis encountered error " + x_axis.error_code_);
+            throw std::runtime_error("X axis encountered error " + x_axis.error_code);
         }
+
+        in_motion = x_axis.in_motion || y_axis.in_motion;
+        position = Point(x_axis.position, y_axis.position);
 
         return true;
     }
@@ -117,7 +120,7 @@ public:
 
     void waitForMotionComplete() {
         UpdateSEL();
-        while(x_axis.in_motion_ || y_axis.in_motion_) {
+        while(x_axis.in_motion || y_axis.in_motion) {
             UpdateSEL();
         }
     }

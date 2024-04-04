@@ -2,6 +2,7 @@
 #define SEL_INTERFACE_H
 
 #include "simple_serial.h"
+#include "point.h"
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -122,34 +123,34 @@ namespace SEL_Interface
     }
 
     /**
-     * Moves actuator to designated joint state.
-     * \param joint_state Vector of axis positions. All axes must be represented. Use -1 to keep axis from moving.
+     * Moves actuators to designated position.
+     * \param position 2D Point to move to. Coordinate are in mm. Both coordinates must be positive.
      * Example command: !99 MOV 03 0000 0200 00050.00 00075.00 @@
      * Example response: #99MOV@@
      */
-    std::string MoveToPosition(std::vector<double> joint_state, unsigned int velocity = 50, double acceleration = 0.0) {
+    std::string MoveToPosition(Point position, unsigned int velocity = 50, double acceleration = 0.01) {
+        auto workspace_min = Point(0, 0);
+        auto workspace_max = Point(250, 450);
+
+        if (!position.inBounds(workspace_min, workspace_max))
+        {
+            std::string err = "Requested position " + position.toString() + " is out of bounds."
+            Logger::error(err);
+            throw std::runtime_error(err);
+        }
+
         if (acceleration < 0) {
             Logger::warn("SEL_Interface::MoveToPosition: A negative acceleration was provided. Using controller default value instead.");
             acceleration = 0.0;
         }
 
-        std::swap(joint_state[0], joint_state[1]); // x and y are flipped on our controller
         std::string code = "MOV";
-        uint16_t axis_pattern = 0;
         std::vector<std::string> axis_positions;
-        for (size_t i = 0; i < joint_state.size(); ++i) {
-            if (joint_state[i] >= 0) {
-                axis_pattern += static_cast<uint8_t>(std::pow(2, i));
-                axis_positions.push_back(format<double>(joint_state[i], 8, 2));
-            }
-        }
 
-        if (axis_positions.size() < 1) {
-            Logger::error("SEL_Interface::MoveToPosition: No axes commanded.");
-            return "SEL_Interface::MoveToPosition: No axes commanded.";
-        }
+        axis_positions.push_back(format<double>(position.y, 8, 2));
+        axis_positions.push_back(format<double>(position.x, 8, 2));
 
-        std::string axis_pattern_string = format<int>(axis_pattern, 2);
+        std::string axis_pattern_string = format<int>(SEL_Interface::Axis::XY, 2);
         std::string accel_string = format<double>(acceleration, 4, 2);
         std::string vel_string = format<unsigned int>(velocity, 4);
 
