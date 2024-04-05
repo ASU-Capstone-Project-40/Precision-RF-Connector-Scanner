@@ -10,7 +10,7 @@ int Logger::log_level_ = Logger::Level::INFO;
 
 int main(int argc, char* argv[]) {
 
-    std::string sel_port = "COM3";
+    std::string sel_port = "COM4";
     int sel_rate = 9600;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -52,27 +52,30 @@ int main(int argc, char* argv[]) {
     try {
         auto& DS = Datastore::getInstance();
 
-        SEL_Interface::MoveToPosition({100, 200});
-        DS.UpdateSEL();
-        DS.waitForMotionComplete();
-
-        // JOG command test - can we overwrite the current jog speed?
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 50);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 40);
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 30);
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 20);
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 10);
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::POSITIVE, 20);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
         SEL_Interface::HaltAll();
+        DS.MoveRC(13);
+        // SEL_Interface::MoveToPosition({250, 450});
+        // DS.waitForMotionComplete();
+
+
+        // // JOG command test - can we overwrite the current jog speed?
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 50);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 40);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 30);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 20);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 10);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 1);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::POSITIVE, 20);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+        // SEL_Interface::HaltAll();
 
         // SEL_Interface::Test("helloworld");
 

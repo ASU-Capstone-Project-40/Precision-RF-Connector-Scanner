@@ -26,11 +26,11 @@ int main(int argc, char* argv[])
     int exitCode = 0;
 
     // SEL controller default parameters
-    std::string sel_port = "COM3";
+    std::string sel_port = "COM4";
     int sel_rate = 9600;
 
     // Gripper default parameters
-    std::string gripper_port = "COM4";
+    std::string gripper_port = "COM6";
     int gripper_rate = 115200;
 
     enum AxisAlignment {
@@ -41,8 +41,8 @@ int main(int argc, char* argv[])
     // Camera parameters
     int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
     int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
-    double tolerance = 1.0; // mm
-    double distance_scale_factor = 0.9; // Prevents overshoot if the distance measured is greater than actual distance
+    double tolerance = 0.6; // mm
+    double distance_scale_factor = 0.65; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
 
@@ -53,8 +53,8 @@ int main(int argc, char* argv[])
 
     // Scanning parameters (mm)
     double scan_width = 90.0; // mm
-    int scan_speed = 100; // mm/s
-    double refinement_speed = 35.0; // mm/s
+    int scan_speed = 75.0; // mm/s
+    double refinement_speed = 10.0; // mm/s
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -134,44 +134,42 @@ int main(int argc, char* argv[])
 
         Path path = buildScanPath(workspace_x, workspace_y, scan_width);
 
-        Point initial_position_measurement; // The measured location of the connector as of the first detection
+        Point initial_measurement; // The measured location of the connector as of the first detection
         Point initial_detection_position; // The joint state of the robot when the connector was first detected
 
         // Begin scan
         Logger::debug("Entering Scan Loop");
-        for (auto& point : path) {
-            SEL_Interface::MoveToPosition(point, refinement_speed);
+        for (size_t i = 0; i < path.size(); ++i) {
+            SEL_Interface::MoveToPosition(path[i], scan_speed);
             DS.UpdateSEL();
 
-            while(DS.x_axis.in_motion || DS.y_axis.in_motion) { // Continously get camera data and check if move has completed
+            while(DS.in_motion) { // Continously get camera data and check if move has completed
                 DS.UpdateSEL();
+                Point initial_detection_position = DS.position;
 
                 // Get camera data
                 ResultData result;
+                resultCollector.ClearOutputData();
                 if(!detectObject(resultCollector, result)) {
                     continue;
                 }
+                
+                SEL_Interface::HaltAll(); // Calling this first allows the robot to drift a little further over the connector
+                                         // before saving the position, hopefully preventing us from moving back to a position
+                                        // where the connector is not yet in frame, since it's always initially detected at the
+                                       // edge of the frame.
 
+                DS.waitForMotionComplete();
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                resultCollector.ClearOutputData();
+
+                if (object_detected) {
+                    break;
+                }
+
+                SEL_Interface::MoveToPosition(path[i-1], refinement_speed);
                 DS.UpdateSEL();
-
-                double x_err = result.positions_m[0].X * camera_x_alignment * 1000;
-                double y_err = result.positions_m[0].Y * camera_y_alignment * 1000;
-                initial_position_measurement.x = DS.x_axis.position - x_err; 
-                initial_position_measurement.y = DS.y_axis.position - y_err;
-
-                initial_detection_position.x = DS.x_axis.position;
-                initial_detection_position.y = DS.y_axis.position;
-
-                SEL_Interface::HaltAll();
-                DS.waitForMotionComplete();
-
-                SEL_Interface::MoveToPosition(initial_detection_position, refinement_speed); // Try switching this to initial_position_measurement
-                DS.waitForMotionComplete();
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Remove this later
-
                 object_detected = true;
-                break;
             }
 
             // Robot is now stationary, whether through halting or arriving at target
@@ -188,6 +186,7 @@ int main(int argc, char* argv[])
 
             while (!within_tolerance) {
                 // Clear any old results (likely overkill)
+                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                 resultCollector.ClearOutputData();
 
                 ResultData result;
@@ -201,15 +200,17 @@ int main(int argc, char* argv[])
                 double x_err = result.positions_m[0].X * camera_x_alignment * 1000;
                 double y_err = result.positions_m[0].Y * camera_y_alignment * 1000;
                 Point err = Point(x_err, y_err);
-                Point detected_location = DS.position + err * distance_scale_factor;
+                Point detected_location = DS.position - err * distance_scale_factor;
 
                 within_tolerance = err.magnitude() < tolerance;
+
+                Logger::info("Current Position: " + DS.position.toString());
+                Logger::info("Detected Error: " + err.toString());
+                Logger::info("Target position: " + detected_location.toString());
 
                 if (within_tolerance) {
                     break;
                 }
-
-                Logger::info(": " + std::to_string(x_err) + ", " + std::to_string(y_err));
 
                 if (detected_location.x > workspace_x || detected_location.y > workspace_y) {
                     Logger::error("Invalid target position: " + std::to_string(detected_location.x) + ", " + std::to_string(detected_location.y));
@@ -225,11 +226,10 @@ int main(int argc, char* argv[])
             SEL_Interface::MoveToPosition({DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y}, scan_speed);
             DS.waitForMotionComplete();
             // Z down to mate with connector
-            DS.MoveRC(14);
+            DS.MoveRC(13);
             DS.waitForZMotionComplete();
 
             // Open gripper
-
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             Gripper_Interface::Close();
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));

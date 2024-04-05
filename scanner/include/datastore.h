@@ -23,6 +23,7 @@ class Datastore {
 public:
     SELMotor x_axis;
     SELMotor y_axis;
+    
     bool in_motion{false};
     Point position{Point(0,0)};
     std::vector<bool> SEL_outputs;

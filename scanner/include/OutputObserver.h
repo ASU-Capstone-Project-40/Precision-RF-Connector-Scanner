@@ -41,6 +41,7 @@ public:
             if (m_queue.size() > 0)
             {
                 m_queue.clear();
+                m_waitObject.Reset();
             }
             m_queue.emplace_back(currentResultData);
         }
@@ -52,6 +53,7 @@ public:
     void ClearOutputData() {
         Pylon::AutoLock scopedLock(m_memberLock);
         m_queue.clear();
+        m_waitObject.Reset();
     }
 
     // Get the wait object for waiting for data.

@@ -13,7 +13,7 @@ int Logger::log_level_ = Logger::Level::DEBUG;
 
 int main(int argc, char* argv[]) {
 
-    std::string gripper_port = "COM4";
+    std::string gripper_port = "COM6";
     int gripper_rate = 115200;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
