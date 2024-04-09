@@ -1,5 +1,5 @@
 #include <WinSock2.h>
-#include <thread>
+#include <iostream>
 
 #include "../include/ResultData.h"
 #include "../include/OutputObserver.h"
@@ -38,14 +38,20 @@ int main(int argc, char* argv[])
         INVERTED = -1
     };
 
+    enum RCPositions {
+        HOME = 0,
+        POUNCE = 13,
+        GRASP = 14,
+        MATE = 15,
+    };
+
     // Camera parameters
     int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
     int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
-    double tolerance = 0.6; // mm
-    double distance_scale_factor = 0.65; // Prevents overshoot if the distance measured is greater than actual distance
+    double tolerance = 0.1; // mm
+    double distance_scale_factor = 0.625; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
-
     double workspace_x = 250.0;  // mm
     double workspace_y = 450.0; // mm
     double camera_to_gripper_x = -163.8173; // mm
@@ -91,19 +97,16 @@ int main(int argc, char* argv[])
     try
     {
         // Initialize serial connections
-        Logger::info("Opening new serial connection on " + sel_port + " at rate " + std::to_string(sel_rate));
         SEL = new SimpleSerial(sel_port, sel_rate);
-
         SEL_Interface::HaltAll(); // Halt all for safety
 
-        Logger::info("Opening new serial connection on " + gripper_port + " at rate " + std::to_string(gripper_rate));
         Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
         // Create datastore
         auto& DS = Datastore::getInstance();
 
         // Ensure the end effector starts from the origin
-        DS.MoveRC(0);
+        DS.MoveRC(RCPositions::HOME);
         DS.waitForZMotionComplete();
 
         SEL_Interface::MoveToPosition({0.0, 0.0}, scan_speed);
@@ -111,8 +114,11 @@ int main(int argc, char* argv[])
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Gripper_Interface::Open();
+        wait(500);
+
+        Logger::info("Confirm when ready to close gripper.");
+        system("pause");
+        Gripper_Interface::Close();
 
         // Before using any pylon methods, the pylon runtime must be initialized.
         PylonInitialize();
@@ -160,7 +166,7 @@ int main(int argc, char* argv[])
                                        // edge of the frame.
 
                 DS.waitForMotionComplete();
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                wait(2000);
                 resultCollector.ClearOutputData();
 
                 if (object_detected) {
@@ -186,7 +192,6 @@ int main(int argc, char* argv[])
 
             while (!within_tolerance) {
                 // Clear any old results (likely overkill)
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                 resultCollector.ClearOutputData();
 
                 ResultData result;
@@ -219,23 +224,31 @@ int main(int argc, char* argv[])
                 
                 SEL_Interface::MoveToPosition(detected_location, refinement_speed);
                 DS.waitForMotionComplete();
+                wait(2000);
+
             }
 
             // Translate xy to place gripper directly over connector
             DS.UpdateSEL();
             SEL_Interface::MoveToPosition({DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y}, scan_speed);
             DS.waitForMotionComplete();
+            
             // Z down to mate with connector
-            DS.MoveRC(13);
+            DS.MoveRC(RCPositions::POUNCE);
+            DS.waitForZMotionComplete();
+
+            Logger::info("Confirm position before mating.");
+            system("pause");
+            DS.MoveRC(RCPositions::MATE);
             DS.waitForZMotionComplete();
 
             // Open gripper
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            Gripper_Interface::Close();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            wait(100);
+            Gripper_Interface::Open();
+            wait(500);
 
             // Z up
-            DS.MoveRC(0);
+            DS.MoveRC(RCPositions::HOME);
             DS.waitForZMotionComplete();
         }
 
@@ -243,7 +256,6 @@ int main(int argc, char* argv[])
         recipe.Stop();
         SEL_Interface::MoveToPosition({0, 0}, scan_speed);
         DS.waitForMotionComplete();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         Gripper_Interface::Open();
     }
 

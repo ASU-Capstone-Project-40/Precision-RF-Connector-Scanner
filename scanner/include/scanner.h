@@ -11,6 +11,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <thread>
 
 #include "logging.h"
 #include "point.h"
@@ -59,6 +60,10 @@ bool detectObject(RecipeOutputObserver& resultCollector, ResultData& result) {
     }
 
     return true;
+}
+
+void wait(unsigned int ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 #endif // SCANNER_H

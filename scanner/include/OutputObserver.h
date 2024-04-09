@@ -41,7 +41,6 @@ public:
             if (m_queue.size() > 0)
             {
                 m_queue.clear();
-                m_waitObject.Reset();
             }
             m_queue.emplace_back(currentResultData);
         }

@@ -1,5 +1,7 @@
 #include "../include/sel_interface.h"   // Defines SEL controller commands
 #include "../include/datastore.h"
+#include <iostream>
+
 
 SimpleSerial *SEL = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;
@@ -8,15 +10,17 @@ int Logger::log_level_ = Logger::Level::INFO;
 
 int main()
 {
-    double workspace_x = 330.0;
-    double workspace_y = 700.0;
-    double scan_width = 20.0;
+    system("pause");
+
+    // double workspace_x = 330.0;
+    // double workspace_y = 700.0;
+    // double scan_width = 20.0;
     
-    // Begin scan
-    auto scan_path = buildScanPath(workspace_x, workspace_y, scan_width);
-    for (auto& point : scan_path) {
-        Logger::debug(point.toString());
-    }
+    // // Begin scan
+    // auto scan_path = buildScanPath(workspace_x, workspace_y, scan_width);
+    // for (auto& point : scan_path) {
+    //     Logger::debug(point.toString());
+    // }
 
 
     // Logger::setLogLevel("debug");

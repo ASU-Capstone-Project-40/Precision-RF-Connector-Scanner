@@ -19,6 +19,7 @@ public:
     SimpleSerial(std::string port, uint32_t baud_rate)
     : io(), serial(io,port), port(port)
     {
+        Logger::info("Opening new serial connection on " + port + " at rate " + std::to_string(baud_rate));
         serial.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
         serial.set_option(boost::asio::serial_port_base::character_size(8));
         serial.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
