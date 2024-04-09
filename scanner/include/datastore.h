@@ -6,7 +6,7 @@
 #include "logging.h"
 #include <vector>
 #include <algorithm>
-#include "point.h"
+#include "xyz.h"
 
 class SELMotor {
 public:
@@ -25,7 +25,7 @@ public:
     SELMotor y_axis;
     
     bool in_motion{false};
-    Point position{Point(0,0)};
+    XYZ position{XYZ(0,0)};
     std::vector<bool> SEL_outputs;
 
     Datastore(const Datastore&) = delete;
@@ -99,7 +99,7 @@ public:
         }
 
         in_motion = x_axis.in_motion || y_axis.in_motion;
-        position = Point(x_axis.position, y_axis.position);
+        position = XYZ(x_axis.position, y_axis.position);
 
         return true;
     }

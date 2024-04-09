@@ -10,7 +10,7 @@
 #include "../include/gripper_interface.h" // Defines gripper commands
 #include "../include/datastore.h"         // Parses and stores system data for easy access
 #include "../include/scanner.h"
-#include "../include/point.h"
+#include "../include/xyz.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
@@ -59,8 +59,8 @@ int main(int argc, char* argv[])
 
     // Scanning parameters (mm)
     double scan_width = 90.0; // mm
-    int scan_speed = 75.0; // mm/s
-    double refinement_speed = 10.0; // mm/s
+    int scan_speed = 100.0; // mm/s
+    double refinement_speed = 25.0; // mm/s
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -140,8 +140,8 @@ int main(int argc, char* argv[])
 
         Path path = buildScanPath(workspace_x, workspace_y, scan_width);
 
-        Point initial_measurement; // The measured location of the connector as of the first detection
-        Point initial_detection_position; // The joint state of the robot when the connector was first detected
+        XYZ initial_measurement; // The measured location of the connector as of the first detection
+        XYZ initial_detection_position; // The joint state of the robot when the connector was first detected
 
         // Begin scan
         Logger::debug("Entering Scan Loop");
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 
             while(DS.in_motion) { // Continously get camera data and check if move has completed
                 DS.UpdateSEL();
-                Point initial_detection_position = DS.position;
+                XYZ initial_detection_position = DS.position;
 
                 // Get camera data
                 ResultData result;
@@ -204,8 +204,8 @@ int main(int argc, char* argv[])
 
                 double x_err = result.positions_m[0].X * camera_x_alignment * 1000;
                 double y_err = result.positions_m[0].Y * camera_y_alignment * 1000;
-                Point err = Point(x_err, y_err);
-                Point detected_location = DS.position - err * distance_scale_factor;
+                XYZ err = XYZ(x_err, y_err);
+                XYZ detected_location = DS.position - err * distance_scale_factor;
 
                 within_tolerance = err.magnitude() < tolerance;
 

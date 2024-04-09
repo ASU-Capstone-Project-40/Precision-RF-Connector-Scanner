@@ -14,13 +14,13 @@
 #include <thread>
 
 #include "logging.h"
-#include "point.h"
+#include "xyz.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
 using namespace Pylon::DataProcessing;
 
-typedef std::vector<Point> Path;
+typedef std::vector<XYZ> Path;
 
 Path buildScanPath (double x_length, double y_length, double width) {
     Path path;
@@ -28,7 +28,7 @@ Path buildScanPath (double x_length, double y_length, double width) {
     for (int i = 0; i < num_passes*2; ++i) {
         double x_coordinate = (std::min)(width * (i/2), x_length);
         double y_coordinate = y_length * (((i+1)/2) % 2);
-        path.push_back(Point(x_coordinate, y_coordinate));
+        path.push_back(XYZ(x_coordinate, y_coordinate));
     }
     return path;
 }
