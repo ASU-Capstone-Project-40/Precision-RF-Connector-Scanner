@@ -53,10 +53,14 @@ int main(int argc, char* argv[]) {
         auto& DS = Datastore::getInstance();
 
         SEL_Interface::HaltAll();
-        DS.MoveRC(15);
+        DS.MoveRC(0);
         DS.waitForZMotionComplete();
 
-        // SEL_Interface::MoveToPosition({250, 450});
+        auto target = XYZ(170.0, 0.0);
+        SEL_Interface::MoveToPosition(target);
+        DS.waitForMotionComplete();
+
+        // SEL_Interface::MoveToPosition({250, 400});
         // DS.waitForMotionComplete();
 
 

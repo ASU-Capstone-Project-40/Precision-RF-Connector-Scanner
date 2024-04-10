@@ -52,13 +52,13 @@ int main(int argc, char* argv[])
     double distance_scale_factor = 0.625; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
-    double workspace_x = 250.0;  // mm
-    double workspace_y = 450.0; // mm
+    double workspace_x = 400.0;  // mm
+    double workspace_y = 600.0; // mm
     double camera_to_gripper_x = -165.6673; // mm
-    double camera_to_gripper_y = +1.75; // mm
+    double camera_to_gripper_y = 1.75; // mm
 
     // Scanning parameters (mm)
-    double scan_width = 90.0; // mm
+    double scan_width = 50.0; // mm
     int scan_speed = 100.0; // mm/s
     double refinement_speed = 25.0; // mm/s
 
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
         DS.MoveRC(RCPositions::HOME);
         DS.waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({0.0, 0.0}, scan_speed);
+        SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0.0}, scan_speed);
         DS.waitForMotionComplete();
 
         // Initialize the gripper
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 
         bool object_detected = false;
 
-        Path path = buildScanPath(workspace_x, workspace_y, scan_width);
+        Path path = buildScanPath(-camera_to_gripper_x + scan_width/2, workspace_x, workspace_y, scan_width);
 
         XYZ initial_measurement; // The measured location of the connector as of the first detection
         XYZ initial_detection_position; // The joint state of the robot when the connector was first detected
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
 
         // Stop the image processing.
         recipe.Stop();
-        SEL_Interface::MoveToPosition({0, 0}, scan_speed);
+        SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0}, scan_speed);
         DS.waitForMotionComplete();
         Gripper_Interface::Open();
     }

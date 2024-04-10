@@ -130,7 +130,7 @@ namespace SEL_Interface
      */
     std::string MoveToPosition(XYZ position, unsigned int velocity = 50, double acceleration = 0.01) {
         auto workspace_min = XYZ(0, 0);
-        auto workspace_max = XYZ(250, 450);
+        auto workspace_max = XYZ(400, 600);
 
         if (!position.inBounds(workspace_min, workspace_max))
         {
