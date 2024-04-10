@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     int exitCode = 0;
 
     // SEL controller default parameters
-    std::string sel_port = "COM4";
+    std::string sel_port = "COM3";
     int sel_rate = 9600;
 
     // Gripper default parameters
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
     // Workspace parameters
     double workspace_x = 250.0;  // mm
     double workspace_y = 450.0; // mm
-    double camera_to_gripper_x = -163.8173; // mm
-    double camera_to_gripper_y = 0.0; // mm
+    double camera_to_gripper_x = -165.6673; // mm
+    double camera_to_gripper_y = +1.75; // mm
 
     // Scanning parameters (mm)
     double scan_width = 90.0; // mm
@@ -119,6 +119,9 @@ int main(int argc, char* argv[])
         Logger::info("Confirm when ready to close gripper.");
         system("pause");
         Gripper_Interface::Close();
+
+        Logger::info("Confirm when ready to continue.");
+        system("pause");
 
         // Before using any pylon methods, the pylon runtime must be initialized.
         PylonInitialize();

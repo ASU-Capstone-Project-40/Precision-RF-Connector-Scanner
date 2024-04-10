@@ -66,4 +66,48 @@ void wait(unsigned int ms) {
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
+// class Pylon {
+// public:
+//     Pylon() {
+//         // Before using any pylon methods, the pylon runtime must be initialized.
+//         PylonInitialize();
+
+//         RecipeOutputObserver resultCollector;
+//         CRecipe recipe; // Create a recipe object representing a recipe file created using the pylon Viewer Workbench.
+//         recipe.Load(PYLON_RECIPE); // Load the recipe file.
+//         recipe.PreAllocateResources(); // Now we allocate all resources we need. This includes the camera device if used in the recipe.
+//         recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append); // This is where the output goes.
+
+//         // Start the processing.
+//         recipe.Start();
+//     }
+
+//     bool Detect() {
+//     ResultData result;
+//     if (!resultCollector.GetWaitObject().Wait(100)) {// Blocks until image received, wait is ms
+//         Logger::error("Scanner::detectObject: Camera data result timeout");
+//         return false;
+//     }
+
+//     resultCollector.GetResultData(result);
+
+//     if (result.hasError) {
+//         std::cout << "Scanner::detectObject: An error occurred while processing recipe: " << result.errorMessage << std::endl; // Todo: Make this work with Logger
+//         return false;
+//     }
+
+//     if (result.scores.empty()) {
+//         Logger::verbose("Scanner::detectObject: No object detected...");
+//         return false;
+//     }
+
+//     return true;
+//     }
+
+//     void Stop() {
+//         // Releases all pylon resources.
+//         PylonTerminate();
+//     }
+// }
+
 #endif // SCANNER_H
