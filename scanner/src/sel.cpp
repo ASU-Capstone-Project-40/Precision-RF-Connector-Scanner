@@ -3,15 +3,36 @@
 #include "../include/simple_serial.h"  // Handles serial communication
 #include "../include/sel_interface.h"  // Defines SEL controller commands
 #include "../include/datastore.h"      // Parses and stores system data for easy access
+#include"../include/gripper_interface.h"
 #include <thread>
 
 SimpleSerial *SEL = nullptr;
+SimpleSerial *Gripper = nullptr;
 int Logger::log_level_ = Logger::Level::INFO;
 
-int main(int argc, char* argv[]) {
+void wait(unsigned int ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
 
-    std::string sel_port = "COM4";
+int main(int argc, char* argv[]) {
+    // SEL controller default parameters
+    std::string sel_port = "COM3";
     int sel_rate = 9600;
+
+    // Gripper default parameters
+    std::string gripper_port = "COM6";
+    int gripper_rate = 115200;
+    // Testing Parameters
+    auto test_point = XYZ(250.0, 250.0);
+
+    enum RCPositions {
+        HOME = 0,
+        POUNCE = 13,
+        GRASP = 14,
+        MATE = 15,
+    };
+
+    // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--log-level" || arg == "-log") {
@@ -30,12 +51,12 @@ int main(int argc, char* argv[]) {
             sel_port = argv[i+1];
             ++i;
         }
-        else if (arg == "--sel-rate") {
+        else if (arg == "--gripper-port") {
             if (argc < i+1) {
-                Logger::warn(arg + " flag provided but no value specified. Using default SEL baud rate " + std::to_string(sel_rate));
+                Logger::warn(arg + " flag provided but no value specified. Using default gripper port " + gripper_port);
                 continue;
             }
-            sel_rate = std::stoi(argv[i+1]);
+            gripper_port = argv[i+1];
             ++i;
         }
         else {
@@ -43,78 +64,53 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    Logger::info("Opening new serial connection on " + sel_port + " at rate " + std::to_string(sel_rate));
-    SEL = new SimpleSerial(sel_port, sel_rate);
+    try
+    {
+        // Initialize serial connections
+        SEL = new SimpleSerial(sel_port, sel_rate);
+        SEL_Interface::HaltAll(); // Halt all for safety
 
-    // Register signal handler to close serial port when ctrl+c is pressed
-    // signal(SIGINT, signalHandler);
+        Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
-    try {
+        // Create datastore
         auto& DS = Datastore::getInstance();
 
-        SEL_Interface::HaltAll();
-        DS.MoveRC(0);
+        Gripper_Interface::Initialize();
+        wait(500);
+
+        Logger::info("Confirm when ready to close gripper.");
+        system("pause");
+        Gripper_Interface::Close();
+
+        Logger::info("Confirm when ready to continue.");
+        system("pause");
+
+        // Ensure the end effector starts from the origin
+        DS.MoveRC(RCPositions::HOME);
         DS.waitForZMotionComplete();
 
-        auto target = XYZ(170.0, 0.0);
-        SEL_Interface::MoveToPosition(target);
+        SEL_Interface::MoveToPosition(test_point);
         DS.waitForMotionComplete();
 
-        // SEL_Interface::MoveToPosition({250, 400});
-        // DS.waitForMotionComplete();
+        SEL_Interface::MoveToPosition(test_point, 1);
+        DS.waitForMotionComplete();
 
+        DS.MoveRC(RCPositions::MATE);
+        DS.waitForZMotionComplete();
 
-        // // JOG command test - can we overwrite the current jog speed?
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 50);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        Logger::info("Confirm when ready to open gripper.");
+        system("pause");
+        Gripper_Interface::Open();
 
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 40);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 30);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 20);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 10);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::NEGATIVE, 1);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        // SEL_Interface::Jog(SEL_Interface::Axis::Y, SEL_Interface::Direction::POSITIVE, 20);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        Logger::info("Confirm when ready to continue.");
+        system("pause");
 
-        // SEL_Interface::HaltAll();
+        DS.MoveRC(RCPositions::HOME);
+        DS.waitForZMotionComplete();
 
-        // SEL_Interface::Test("helloworld");
+        SEL_Interface::MoveToPosition({0, 0});
+        DS.waitForMotionComplete();
 
-        // std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-
-        // SEL_Interface::Home(SEL_Interface::Axis::XY);
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({0.0, 0.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({0.0, 200.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({100.0, 200.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({100.0, 0.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({200.0, 0.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({200.0, 200.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::MoveToPosition({0.0, 0.0});
-        // DS.waitForMotionComplete();
-
-        // SEL_Interface::HaltAll();
-
-        SEL->Close();
-        Logger::info("All done!");
     }
 
     catch (const std::exception& e) {

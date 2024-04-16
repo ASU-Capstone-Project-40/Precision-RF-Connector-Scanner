@@ -62,6 +62,9 @@ int main(int argc, char* argv[])
     int scan_speed = 100.0; // mm/s
     double refinement_speed = 25.0; // mm/s
 
+    // Testing Parameters
+    auto test_point = XYZ(250.0, 250.0);
+
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -162,7 +165,7 @@ int main(int argc, char* argv[])
                 if(!detectObject(resultCollector, result)) {
                     continue;
                 }
-                
+
                 SEL_Interface::HaltAll(); // Calling this first allows the robot to drift a little further over the connector
                                          // before saving the position, hopefully preventing us from moving back to a position
                                         // where the connector is not yet in frame, since it's always initially detected at the
@@ -224,7 +227,7 @@ int main(int argc, char* argv[])
                     Logger::error("Invalid target position: " + std::to_string(detected_location.x) + ", " + std::to_string(detected_location.y));
                     continue;
                 }
-                
+
                 SEL_Interface::MoveToPosition(detected_location, refinement_speed);
                 DS.waitForMotionComplete();
                 wait(2000);
@@ -233,9 +236,20 @@ int main(int argc, char* argv[])
 
             // Translate xy to place gripper directly over connector
             DS.UpdateSEL();
-            SEL_Interface::MoveToPosition({DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y}, scan_speed);
+
+            auto connector_position = XYZ(DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y);
+            Logger::error("----------------------------------------------------------");
+            Logger::error("Detected Position: " + connector_position.toString());
+            Logger::error("Error: " + std::to_string(connector_position - test_point));
+            Logger::error("----------------------------------------------------------");
+
+
+            SEL_Interface::MoveToPosition(connector_position, scan_speed);
             DS.waitForMotionComplete();
-            
+            Logger::error("Acheived Position: " + DS.position.toString());
+            Logger::error("Error: " + std::to_string(DS.position - connector_position));
+            Logger::error("----------------------------------------------------------");
+
             // Z down to mate with connector
             DS.MoveRC(RCPositions::POUNCE);
             DS.waitForZMotionComplete();
