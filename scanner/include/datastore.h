@@ -31,8 +31,8 @@ public:
     Datastore(const Datastore&) = delete;
     Datastore& operator=(const Datastore&) = delete;
 
-    static Datastore& getInstance() {
-        static Datastore instance;
+    static Datastore* getInstance() {
+        static Datastore* instance;
         return instance;
     }
 
@@ -153,5 +153,6 @@ private:
     }
 };
 
+extern Datastore* DS;
 
 #endif // DATASTORE_H

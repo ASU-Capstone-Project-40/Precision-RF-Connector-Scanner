@@ -16,8 +16,11 @@
 using namespace Pylon;
 using namespace Pylon::DataProcessing;
 
+// Initialize globals to allow header files access to these objects
 SimpleSerial *SEL = nullptr;
 SimpleSerial *Gripper = nullptr;
+Datastore *DS = nullptr; 
+
 int Logger::log_level_ = Logger::Level::INFO;
 
 int main(int argc, char* argv[])
@@ -46,10 +49,9 @@ int main(int argc, char* argv[])
     };
 
     // Camera parameters
-    int camera_x_alignment = AxisAlignment::INVERTED; // Camera x with respect to robot x
-    int camera_y_alignment = AxisAlignment::ALIGNED; // Camera y with respect to robot y
+    XYZ camera_alignment = XYZ(AxisAlignment::INVERTED, AxisAlignment::ALIGNED); 
     double tolerance = 0.1; // mm
-    double distance_scale_factor = 0.625; // Prevents overshoot if the distance measured is greater than actual distance
+    double measurement_scale_factor = 0.65; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
     double workspace_x = 400.0;  // mm
@@ -57,7 +59,7 @@ int main(int argc, char* argv[])
     double camera_to_gripper_x = -165.6673; // mm
     double camera_to_gripper_y = 1.75; // mm
 
-    // Scanning parameters (mm)
+    // Scanning parameters
     double scan_width = 50.0; // mm
     int scan_speed = 100.0; // mm/s
     double refinement_speed = 25.0; // mm/s
@@ -103,14 +105,14 @@ int main(int argc, char* argv[])
         Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
         // Create datastore
-        auto& DS = Datastore::getInstance();
+        DS = Datastore::getInstance();
 
         // Ensure the end effector starts from the origin
-        DS.MoveRC(RCPositions::HOME);
-        DS.waitForZMotionComplete();
+        DS->MoveRC(RCPositions::HOME);
+        DS->waitForZMotionComplete();
 
         SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0.0}, scan_speed);
-        DS.waitForMotionComplete();
+        DS->waitForMotionComplete();
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
@@ -123,127 +125,67 @@ int main(int argc, char* argv[])
         Logger::info("Confirm when ready to continue.");
         system("pause");
 
-        // Before using any pylon methods, the pylon runtime must be initialized.
-        PylonInitialize();
-
-        // Initialize Pylon stuff
-        // This object is used for collecting the output data.
-        // If placed on the stack, it must be created before the recipe
-        // so that it is destroyed after the recipe.
-        RecipeOutputObserver resultCollector;
-        CRecipe recipe; // Create a recipe object representing a recipe file created using the pylon Viewer Workbench.
-        recipe.Load(PYLON_RECIPE); // Load the recipe file.
-        recipe.PreAllocateResources(); // Now we allocate all resources we need. This includes the camera device if used in the recipe.
-        recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append); // This is where the output goes.
-
-        // Start the processing.
-        recipe.Start();
-
-        bool object_detected = false;
-
         Path path = buildScanPath(-camera_to_gripper_x + scan_width/2, workspace_x, workspace_y, scan_width);
 
-        XYZ initial_measurement; // The measured location of the connector as of the first detection
-        XYZ initial_detection_position; // The joint state of the robot when the connector was first detected
+        auto mobileScanner = PylonRecipe(MOBILE_CONNECTOR_RECIPE, camera_alignment);
+        
+        bool success = Scan(mobileScanner, path, scan_speed);
 
-        // Begin scan
-        Logger::debug("Entering Scan Loop");
-        for (size_t i = 0; i < path.size(); ++i) {
-            SEL_Interface::MoveToPosition(path[i], scan_speed);
-            DS.UpdateSEL();
-
-            while(DS.in_motion) { // Continously get camera data and check if move has completed
-                DS.UpdateSEL();
-                XYZ initial_detection_position = DS.position;
-
-                // Get camera data
-                ResultData result;
-                resultCollector.ClearOutputData();
-                if(!detectObject(resultCollector, result)) {
-                    continue;
-                }
-                
-                SEL_Interface::HaltAll(); // Calling this first allows the robot to drift a little further over the connector
-                                         // before saving the position, hopefully preventing us from moving back to a position
-                                        // where the connector is not yet in frame, since it's always initially detected at the
-                                       // edge of the frame.
-
-                DS.waitForMotionComplete();
-                wait(2000);
-                resultCollector.ClearOutputData();
-
-                if (object_detected) {
-                    break;
-                }
-
-                SEL_Interface::MoveToPosition(path[i-1], refinement_speed);
-                DS.UpdateSEL();
-                object_detected = true;
-            }
-
-            // Robot is now stationary, whether through halting or arriving at target
-            if (object_detected)
-                break;
+        if (success) {
+            success = Refine(mobileScanner, refinement_speed, tolerance, measurement_scale_factor);
         }
 
-        // At this point, scan is complete
-        if (object_detected) {
+        mobileScanner.Stop();
 
-            // Refine position to place camera directly over connector
-            bool within_tolerance = false;
-            Logger::debug("Entering refinement loop...");
-
-            while (!within_tolerance) {
-                // Clear any old results (likely overkill)
-                resultCollector.ClearOutputData();
-
-                ResultData result;
-                if(!detectObject(resultCollector, result)) {
-                    Logger::error("No object detected in refinement loop");
-                    continue;
-                }
-
-                DS.UpdateSEL();
-
-                double x_err = result.positions_m[0].X * camera_x_alignment * 1000;
-                double y_err = result.positions_m[0].Y * camera_y_alignment * 1000;
-                XYZ err = XYZ(x_err, y_err);
-                XYZ detected_location = DS.position - err * distance_scale_factor;
-
-                within_tolerance = err.magnitude() < tolerance;
-
-                Logger::info("Current Position: " + DS.position.toString());
-                Logger::info("Detected Error: " + err.toString());
-                Logger::info("Target position: " + detected_location.toString());
-
-                if (within_tolerance) {
-                    break;
-                }
-
-                if (detected_location.x > workspace_x || detected_location.y > workspace_y) {
-                    Logger::error("Invalid target position: " + std::to_string(detected_location.x) + ", " + std::to_string(detected_location.y));
-                    continue;
-                }
-                
-                SEL_Interface::MoveToPosition(detected_location, refinement_speed);
-                DS.waitForMotionComplete();
-                wait(2000);
-
-            }
-
+        if (success) {
             // Translate xy to place gripper directly over connector
-            DS.UpdateSEL();
-            SEL_Interface::MoveToPosition({DS.x_axis.position + camera_to_gripper_x, DS.y_axis.position + camera_to_gripper_y}, scan_speed);
-            DS.waitForMotionComplete();
+            DS->UpdateSEL();
+            SEL_Interface::MoveToPosition({DS->x_axis.position + camera_to_gripper_x, DS->y_axis.position + camera_to_gripper_y}, scan_speed);
+            DS->waitForMotionComplete();
             
             // Z down to mate with connector
-            DS.MoveRC(RCPositions::POUNCE);
-            DS.waitForZMotionComplete();
+            DS->MoveRC(RCPositions::POUNCE);
+            DS->waitForZMotionComplete();
 
             Logger::info("Confirm position before mating.");
             system("pause");
-            DS.MoveRC(RCPositions::MATE);
-            DS.waitForZMotionComplete();
+            DS->MoveRC(RCPositions::MATE);
+            DS->waitForZMotionComplete();
+
+            // Close Gripper
+            wait(100);
+            Gripper_Interface::Close();
+            wait(500);
+
+            // Z up
+            DS->MoveRC(RCPositions::HOME);
+            DS->waitForZMotionComplete();
+        }
+
+        auto fixedScanner = PylonRecipe(FIXED_CONNECTOR_RECIPE, camera_alignment);
+
+        success = Scan(fixedScanner, path, scan_speed);
+
+        if (success) {
+            success = Refine(fixedScanner, refinement_speed, tolerance, measurement_scale_factor);
+        }
+
+        fixedScanner.Stop();
+
+        if (success) {
+            // Translate xy to place gripper directly over connector
+            DS->UpdateSEL();
+            SEL_Interface::MoveToPosition({DS->x_axis.position + camera_to_gripper_x, DS->y_axis.position + camera_to_gripper_y}, scan_speed);
+            DS->waitForMotionComplete();
+            
+            // Z down to mate with connector
+            DS->MoveRC(RCPositions::POUNCE);
+            DS->waitForZMotionComplete();
+
+            Logger::info("Confirm position before mating.");
+            system("pause");
+            DS->MoveRC(RCPositions::MATE);
+            DS->waitForZMotionComplete();
 
             // Open gripper
             wait(100);
@@ -251,14 +193,12 @@ int main(int argc, char* argv[])
             wait(500);
 
             // Z up
-            DS.MoveRC(RCPositions::HOME);
-            DS.waitForZMotionComplete();
+            DS->MoveRC(RCPositions::HOME);
+            DS->waitForZMotionComplete();
         }
 
-        // Stop the image processing.
-        recipe.Stop();
         SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0}, scan_speed);
-        DS.waitForMotionComplete();
+        DS->waitForMotionComplete();
         Gripper_Interface::Open();
     }
 
@@ -277,9 +217,6 @@ int main(int argc, char* argv[])
         exitCode = 1;
         throw;
     }
-
-    // Releases all pylon resources.
-    PylonTerminate();
 
     return exitCode;
 }
