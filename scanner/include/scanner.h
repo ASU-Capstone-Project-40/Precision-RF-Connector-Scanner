@@ -22,12 +22,12 @@ using namespace Pylon::DataProcessing;
 
 typedef std::vector<XYZ> Path;
 
-Path buildScanPath (double x_min, double x_max, double y_length, double width) {
+Path buildScanPath (double x_min, XYZ max, double width) {
     Path path;
-    int num_passes = std::ceil((x_max - x_min) / width) + 1;
+    int num_passes = std::ceil((max.x - x_min) / width) + 1;
     for (int i = 0; i < num_passes*2; ++i) {
-        double x_coordinate = (std::min)(width * (i/2) + x_min, x_max);
-        double y_coordinate = y_length * (((i+1)/2) % 2);
+        double x_coordinate = (std::min)(width * (i/2) + x_min, max.x);
+        double y_coordinate = max.y * (((i+1)/2) % 2);
         path.push_back(XYZ(x_coordinate, y_coordinate));
     }
     return path;
@@ -44,13 +44,22 @@ public:
 
     PylonRecipe(const Pylon::String_t& recipePath, XYZ alignment)
         : resultCollector(), recipe(), alignment(alignment) {
-
+        Logger::debug("Initializing new pylon recipe");
         PylonInitialize();  // Before using any pylon methods, the pylon runtime must be initialized.
+        Logger::verbose("Loading recipe");
+
         recipe.Load(recipePath); // Load the recipe file.
+        Logger::verbose("Allocating resources");
+
         recipe.PreAllocateResources(); // Now we allocate all resources we need. This includes the camera device if used in the recipe.
+        Logger::verbose("Registering Outputs Observer");
+
         recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append); // This is where the output goes.
+        Logger::verbose("Starting recipe Outputs Observer");
+
         // Start the processing.
         recipe.Start();
+        Logger::verbose("Successfully initialized pylon recipe");
     }
 
     bool Detect(XYZ& position) {
@@ -77,8 +86,11 @@ public:
     }
 
     void Stop() {
+        Logger::verbose("Stopping recipe.");
         recipe.Stop(); // Stop the image processing.
+        Logger::verbose("Releasing pylon resources.");
         PylonTerminate(); // Releases all pylon resources
+        Logger::debug("Recipe stopped. All pylon resources released.");
     }
 
 private:

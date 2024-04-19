@@ -32,8 +32,8 @@ public:
     Datastore& operator=(const Datastore&) = delete;
 
     static Datastore* getInstance() {
-        static Datastore* instance;
-        return instance;
+        static Datastore instance;
+        return &instance;
     }
 
     bool UpdateSEL() {
@@ -113,6 +113,7 @@ public:
     }
 
     void waitForZMotionComplete() {
+        Logger::verbose("Waiting for Z Motion complete.");
         while(true) {
             if (zMotionComplete())
                 return;
@@ -146,6 +147,7 @@ public:
         SEL_Interface::SetOutputs(position_ports, position_values, SEL_outputs); // Set position
         SEL_Interface::SetOutputs({302}, {1}, SEL_outputs); // Command start
         SEL_Interface::SetOutputs({302}, {0}, SEL_outputs);
+        Logger::verbose("Successfully sent moveRC command.");
     }
 
 private:

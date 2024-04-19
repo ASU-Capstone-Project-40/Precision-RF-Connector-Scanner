@@ -54,15 +54,14 @@ int main(int argc, char* argv[])
     double measurement_scale_factor = 0.65; // Prevents overshoot if the distance measured is greater than actual distance
 
     // Workspace parameters
-    double workspace_x = 400.0;  // mm
-    double workspace_y = 600.0; // mm
-    double camera_to_gripper_x = -165.6673; // mm
-    double camera_to_gripper_y = 1.75; // mm
+    XYZ workspace = XYZ(400.0, 600.0);
+    XYZ camera_to_gripper = XYZ(-165.6673, 1.75); // mm
 
     // Scanning parameters
     double scan_width = 50.0; // mm
     int scan_speed = 100.0; // mm/s
     double refinement_speed = 25.0; // mm/s
+    XYZ scan_start = XYZ(-camera_to_gripper.x + scan_width/2, 0.0);
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -111,21 +110,15 @@ int main(int argc, char* argv[])
         DS->MoveRC(RCPositions::HOME);
         DS->waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0.0}, scan_speed);
+        SEL_Interface::MoveToPosition(scan_start, scan_speed);
         DS->waitForMotionComplete();
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
-        wait(500);
+        wait(100);
+        Gripper_Interface::Open();
 
-        Logger::info("Confirm when ready to close gripper.");
-        system("pause");
-        Gripper_Interface::Close();
-
-        Logger::info("Confirm when ready to continue.");
-        system("pause");
-
-        Path path = buildScanPath(-camera_to_gripper_x + scan_width/2, workspace_x, workspace_y, scan_width);
+        Path path = buildScanPath(-camera_to_gripper.x + scan_width/2, workspace, scan_width);
 
         auto mobileScanner = PylonRecipe(MOBILE_CONNECTOR_RECIPE, camera_alignment);
         
@@ -140,17 +133,15 @@ int main(int argc, char* argv[])
         if (success) {
             // Translate xy to place gripper directly over connector
             DS->UpdateSEL();
-            SEL_Interface::MoveToPosition({DS->x_axis.position + camera_to_gripper_x, DS->y_axis.position + camera_to_gripper_y}, scan_speed);
+            SEL_Interface::MoveToPosition(DS->position + camera_to_gripper, scan_speed);
             DS->waitForMotionComplete();
             
             // Z down to mate with connector
-            DS->MoveRC(RCPositions::POUNCE);
+            DS->MoveRC(RCPositions::GRASP);
             DS->waitForZMotionComplete();
 
-            Logger::info("Confirm position before mating.");
+            Logger::info("Confirm position before grasping.");
             system("pause");
-            DS->MoveRC(RCPositions::MATE);
-            DS->waitForZMotionComplete();
 
             // Close Gripper
             wait(100);
@@ -164,7 +155,9 @@ int main(int argc, char* argv[])
 
         auto fixedScanner = PylonRecipe(FIXED_CONNECTOR_RECIPE, camera_alignment);
 
-        success = Scan(fixedScanner, path, scan_speed);
+        if (success) {
+            success = Scan(fixedScanner, path, scan_speed);
+        }
 
         if (success) {
             success = Refine(fixedScanner, refinement_speed, tolerance, measurement_scale_factor);
@@ -175,7 +168,7 @@ int main(int argc, char* argv[])
         if (success) {
             // Translate xy to place gripper directly over connector
             DS->UpdateSEL();
-            SEL_Interface::MoveToPosition({DS->x_axis.position + camera_to_gripper_x, DS->y_axis.position + camera_to_gripper_y}, scan_speed);
+            SEL_Interface::MoveToPosition(DS->position + camera_to_gripper, scan_speed);
             DS->waitForMotionComplete();
             
             // Z down to mate with connector
@@ -197,7 +190,7 @@ int main(int argc, char* argv[])
             DS->waitForZMotionComplete();
         }
 
-        SEL_Interface::MoveToPosition({-camera_to_gripper_x + scan_width/2, 0}, scan_speed);
+        SEL_Interface::MoveToPosition(scan_start, scan_speed);
         DS->waitForMotionComplete();
         Gripper_Interface::Open();
     }
