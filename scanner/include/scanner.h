@@ -55,11 +55,28 @@ public:
         Logger::verbose("Registering Outputs Observer");
 
         recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append); // This is where the output goes.
-        Logger::verbose("Starting recipe Outputs Observer");
+        Logger::verbose("Starting recipe");
 
         // Start the processing.
         recipe.Start();
         Logger::verbose("Successfully initialized pylon recipe");
+    }
+
+    void Load(const Pylon::String_t& recipePath) {
+        Logger::debug("Initializing new pylon recipe");
+        PylonInitialize();  // Before using any pylon methods, the pylon runtime must be initialized.
+        
+        Logger::verbose("Loading recipe");
+        recipe.Load(recipePath); // Load the recipe file.
+        
+        Logger::verbose("Allocating resources");
+        recipe.PreAllocateResources(); // Now we allocate all resources we need. This includes the camera device if used in the recipe.
+        
+        Logger::verbose("Registering Outputs Observer");
+        recipe.RegisterAllOutputsObserver(&resultCollector, RegistrationMode_Append); // This is where the output goes.
+        
+        Logger::verbose("Starting recipe");
+        recipe.Start();
     }
 
     bool Detect(XYZ& position) {
@@ -82,6 +99,7 @@ public:
     }
 
     position = XYZ(result.positions_m[0].X * alignment.x, result.positions_m[0].Y * alignment.y) * 1000;
+    Logger::info("Object detected!");
     return true;
     }
 
@@ -124,7 +142,7 @@ bool Scan (PylonRecipe& recipe, Path path, int speed = 100) {
                 return true;
             }
 
-            SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/2), 1));
+            SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/10), 1));
             DS->UpdateSEL();
             object_detected = true;
         }
