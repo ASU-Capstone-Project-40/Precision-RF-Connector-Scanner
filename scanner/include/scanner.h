@@ -136,13 +136,12 @@ bool Scan (PylonRecipe& recipe, Path path, int speed = 100) {
             SEL_Interface::HaltAll();
 
             DS->waitForMotionComplete();
-            wait(2000);
 
-            if (object_detected) {
+            if (recipe.Detect(detected_position)) {
                 return true;
             }
 
-            SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/10), 1));
+            SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/2), 1));
             DS->UpdateSEL();
             object_detected = true;
         }
@@ -177,7 +176,6 @@ bool Refine(PylonRecipe& recipe, int speed, double tolerance, double scale_facto
         
         SEL_Interface::MoveToPosition(target_position, speed);
         DS->waitForMotionComplete();
-        wait(2000);
     }
     Logger::error("I don't think you should be seeing this message...");
     return false;

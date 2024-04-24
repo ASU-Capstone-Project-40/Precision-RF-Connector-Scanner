@@ -124,11 +124,11 @@ namespace SEL_Interface
 
     /**
      * Moves actuators to designated position.
-     * \param position 2D XYZ to move to. Coordinate are in mm. Both coordinates must be positive.
+     * \param position 2D point to move to. Coordinates are in mm. Both coordinates must be positive.
      * Example command: !99 MOV 03 0000 0200 00050.00 00075.00 @@
      * Example response: #99MOV@@
      */
-    std::string MoveToPosition(XYZ position, unsigned int velocity = 50, double acceleration = 0.01) {
+    std::string MoveToPosition(XYZ position, unsigned int velocity = 50, double acceleration = 0.0) {
         auto workspace_min = XYZ(0, 0);
         auto workspace_max = XYZ(400, 600);
 
