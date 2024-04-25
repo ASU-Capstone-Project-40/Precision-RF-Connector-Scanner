@@ -8,9 +8,9 @@
 #include "../include/simple_serial.h"     // Handles serial communication
 #include "../include/sel_interface.h"     // Defines SEL controller commands
 #include "../include/gripper_interface.h" // Defines gripper commands
-#include "../include/datastore.h"         // Parses and stores system data for easy access
+#include "../include/commander.h"         // Parses and stores system data for easy access
 #include "../include/scanner.h"
-#include "../include/xyz.h"
+#include "../include/xy.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
@@ -19,7 +19,7 @@ using namespace Pylon::DataProcessing;
 // Initialize globals to allow header files access to these objects
 SimpleSerial *SEL = nullptr;
 SimpleSerial *Gripper = nullptr;
-Datastore *DS = nullptr; 
+Commander *commander = nullptr; 
 
 int Logger::log_level_ = Logger::Level::INFO;
 
@@ -41,29 +41,22 @@ int main(int argc, char* argv[])
         INVERTED = -1
     };
 
-    enum RCPositions {
-        HOME = 0,
-        POUNCE = 13,
-        GRASP = 14,
-        MATE = 15,
-    };
-
     // Camera parameters
-    XYZ camera_alignment = XYZ(AxisAlignment::INVERTED, AxisAlignment::ALIGNED); 
+    XY camera_alignment = XY(AxisAlignment::INVERTED, AxisAlignment::ALIGNED); 
     double fixed_tolerance = 0.1;
     double mobile_tolerance = 1.0; // mm
     double fixed_scale_factor = 0.59; // Prevents overshoot if the distance measured is greater than actual distance
     double mobile_scale_factor = 0.59; 
 
     // Workspace parameters
-    XYZ workspace = XYZ(400.0, 600.0);
-    XYZ camera_to_gripper = XYZ(-165.1, 1.6); // mm
+    XY workspace = XY(400.0, 600.0);
+    XY camera_to_gripper = XY(-165.1, 1.6); // mm
 
     // Scanning parameters
     double scan_width = 50.0; // mm
     int scan_speed = 200.0; // mm/s
     double refinement_speed = 200.0; // mm/s
-    XYZ scan_start = XYZ(-camera_to_gripper.x + scan_width/2, 0.0);
+    XY mobile_scan_start = XY(-camera_to_gripper.x + scan_width/2, 0.0);
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -105,95 +98,65 @@ int main(int argc, char* argv[])
 
         Gripper = new SimpleSerial(gripper_port, gripper_rate);
 
-        // Create datastore
-        DS = Datastore::getInstance();
+        // Create commander
+        commander = Commander::getInstance();
 
         // Ensure the end effector starts from the origin
-        DS->MoveRC(RCPositions::HOME);
-        DS->waitForZMotionComplete();
+        commander->MoveRC(RCPositions::HOME);
+        commander->waitForZMotionComplete();
 
-        SEL_Interface::MoveToPosition(scan_start, scan_speed);
-        DS->waitForMotionComplete();
+        SEL_Interface::MoveToPosition(mobile_scan_start, scan_speed);
+        commander->waitForXYMotionComplete();
 
         // Initialize the gripper
         Gripper_Interface::Initialize();
-        wait(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
         Gripper_Interface::Open();
 
-        auto Scanner = PylonRecipe(MOBILE_CONNECTOR_RECIPE, camera_alignment);
-        Path path = buildScanPath(-camera_to_gripper.x + scan_width/2, workspace, scan_width);
-        bool success = Scan(Scanner, path, scan_speed);
+        // Initialize object recognition model
+        auto Scanner = PylonRecipe(SCANNER_RECIPE, camera_alignment);
+
+        // Create scan path
+        Path mobile_scan_path = buildScanPath(mobile_scan_start, workspace, scan_width);
+        
+        // Find mobile connector, record fixed connector location if seen
+        auto fixed_position = XY();
+        auto [success, fixed_found] = ScanForMobile(Scanner, mobile_scan_path, scan_speed, fixed_position);
 
         if (success) {
-            success = Refine(Scanner, refinement_speed, mobile_tolerance, mobile_scale_factor);
+            success = RefineToMobile(Scanner, refinement_speed, mobile_tolerance, mobile_scale_factor);
+        }
+
+        if (success) {
+            // Grasp mobile connector
+            commander->UpdateSEL();
+            commander->GraspMobile(camera_to_gripper, scan_speed, true);
+        
+            // Set up to find fixed connector
+            auto fixed_scan_start = (fixed_found ? fixed_position : (commander->position - camera_to_gripper));
+
+            SEL_Interface::MoveToPosition(fixed_scan_start, scan_speed);
+
+            Path fixed_scan_path = buildScanPath(fixed_scan_start, workspace, scan_width);
+
+            commander->waitForAllMotionComplete();
+            
+            success = ScanForFixed(Scanner, fixed_scan_path, scan_speed);
+        }
+
+        if (success) {
+            success = RefineToFixed(Scanner, refinement_speed, fixed_tolerance, fixed_scale_factor);
         }
 
         Scanner.Stop();
 
         if (success) {
-            // Translate xy to place gripper directly over connector
-            DS->UpdateSEL();
-            SEL_Interface::MoveToPosition(DS->position + camera_to_gripper, scan_speed);
-
-            DS->waitForMotionComplete();
-            
-            // Z down to mate with connector
-            DS->MoveRC(RCPositions::GRASP);
-            DS->waitForZMotionComplete();
-
-            // Logger::info("Confirm position before grasping.");
-            // system("pause");
-
-            // Close Gripper
-            Gripper_Interface::Close();
-            wait(200);
-
-            // Z up
-            DS->MoveRC(RCPositions::HOME);
+            commander->MateMobileToFixed(camera_to_gripper, scan_speed, true);
         }
 
-        SEL_Interface::MoveToPosition(scan_start, scan_speed);
-        Scanner.Load(FIXED_CONNECTOR_RECIPE);
-
-        DS->waitForMotionComplete();
-        DS->waitForZMotionComplete();
-
-        if (success) {
-            success = Scan(Scanner, path, scan_speed);
-        }
-
-        if (success) {
-            success = Refine(Scanner, refinement_speed, fixed_tolerance, fixed_scale_factor);
-        }
-
-        Scanner.Stop();
-
-        if (success) {
-            // Translate xy to place gripper directly over connector
-            DS->UpdateSEL();
-            SEL_Interface::MoveToPosition(DS->position + camera_to_gripper, scan_speed);
-            DS->waitForMotionComplete();
-            
-            // Z down to mate with connector
-            DS->MoveRC(RCPositions::POUNCE);
-            DS->waitForZMotionComplete();
-
-            // Logger::info("Confirm position before mating.");
-            // system("pause");
-            DS->MoveRC(RCPositions::MATE);
-            DS->waitForZMotionComplete();
-
-            // Open gripper
-            Gripper_Interface::Open();
-            wait(100);
-
-            // Z up
-            DS->MoveRC(RCPositions::HOME);
-        }
-
-        SEL_Interface::MoveToPosition(scan_start, scan_speed);
-        DS->waitForMotionComplete();
-        DS->waitForZMotionComplete();
+        SEL_Interface::MoveToPosition(mobile_scan_start, scan_speed);
+        commander->waitForAllMotionComplete();
         Gripper_Interface::Open();
     }
 

@@ -14,23 +14,18 @@ find_package(pylonDataProcessing REQUIRED)
 
 add_executable(scanner
     src/scanner.cpp
-    include/fixedConnector.precipe
+    include/scanner.precipe
     include/ResultData.h
     include/OutputObserver.h
 )
 
-get_filename_component(FIXED_CONNECTOR_RECIPE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fixedConnector.precipe" ABSOLUTE
-)
-
-get_filename_component(MOBILE_CONNECTOR_RECIPE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/mobileConnector.precipe" ABSOLUTE
+get_filename_component(SCANNER_RECIPE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/scanner.precipe" ABSOLUTE
 )
 
 target_compile_definitions(scanner
         PRIVATE
-        FIXED_CONNECTOR_RECIPE="${FIXED_CONNECTOR_RECIPE}"
-        MOBILE_CONNECTOR_RECIPE="${MOBILE_CONNECTOR_RECIPE}"
+        SCANNER_RECIPE="${SCANNER_RECIPE}"
         )
 
 target_link_libraries(scanner

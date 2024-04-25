@@ -2,7 +2,7 @@
 #define SEL_INTERFACE_H
 
 #include "simple_serial.h"
-#include "xyz.h"
+#include "xy.h"
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -10,7 +10,7 @@
 
 namespace SEL_Interface
 {
-    enum Axis {
+    enum class Axis {
         NONE = 0,
         Y = 1,
         X = 2,
@@ -115,7 +115,7 @@ namespace SEL_Interface
      */
     std::string Home(Axis axis) {
         std::string code = "HOM";
-        std::string axis_pattern_string = format<int>(axis, 2, 0);
+        std::string axis_pattern_string = format<int>(static_cast<int>(axis), 2, 0);
         std::string cmd = exec + code + axis_pattern_string + "00" + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
@@ -128,9 +128,9 @@ namespace SEL_Interface
      * Example command: !99 MOV 03 0000 0200 00050.00 00075.00 @@
      * Example response: #99MOV@@
      */
-    std::string MoveToPosition(XYZ position, unsigned int velocity = 50, double acceleration = 0.0) {
-        auto workspace_min = XYZ(0, 0);
-        auto workspace_max = XYZ(400, 600);
+    std::string MoveToPosition(XY position, unsigned int velocity = 50, double acceleration = 0.0) {
+        auto workspace_min = XY(0, 0);
+        auto workspace_max = XY(400, 600);
 
         if (!position.inBounds(workspace_min, workspace_max))
         {
@@ -150,7 +150,7 @@ namespace SEL_Interface
         axis_positions.push_back(format<double>(position.y, 8, 2));
         axis_positions.push_back(format<double>(position.x, 8, 2));
 
-        std::string axis_pattern_string = format<int>(SEL_Interface::Axis::XY, 2);
+        std::string axis_pattern_string = format<int>(static_cast<int>(SEL_Interface::Axis::XY), 2);
         std::string accel_string = format<double>(acceleration, 4, 2);
         std::string vel_string = format<unsigned int>(velocity, 4);
 
@@ -175,7 +175,7 @@ namespace SEL_Interface
      */
     std::string Halt(Axis axis) {
         std::string code = "HLT";
-        std::string axis_pattern_string = format<int>(axis, 2, 0);
+        std::string axis_pattern_string = format<int>(static_cast<int>(axis), 2, 0);
         std::string cmd = exec + code + axis_pattern_string + term;
         SEL->writeString(cmd);
         std::string resp = SEL->readLine();
@@ -205,7 +205,7 @@ namespace SEL_Interface
     */
     std::string Jog(Axis axis, Direction direction, uint16_t velocity = 50, double acceleration = 0.3) {
         std::string code = "JOG";
-        std::string axis_pattern = format<int>(axis, 2, 0);
+        std::string axis_pattern = format<int>(static_cast<int>(axis), 2, 0);
         std::string acceleration_string = format<double>(acceleration, 4, 2);
         std::string velocity_string = format<int16_t>(std::abs(velocity), 4, 0);
         std::string direction_string = std::to_string(direction);

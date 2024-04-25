@@ -14,11 +14,10 @@ public:
     {
     }
 
-    std::vector<double> scores;
-    std::vector<Pylon::DataProcessing::SPointF2D> positions_px;
-    std::vector<double> vScalingFactors;
-    std::vector<double> hScalingFactors;
-    std::vector<Pylon::DataProcessing::SPointF2D> positions_m;
+    std::vector<double> fixed_score;
+    std::vector<Pylon::DataProcessing::SPointF2D> fixed_position;
+    std::vector<double> mobile_score;
+    std::vector<Pylon::DataProcessing::SPointF2D> mobile_position;
 
     bool hasError;                  // If something doesn't work as expected
                                     // while processing data, this is set to true.
@@ -27,19 +26,19 @@ public:
 
     void fromVariantContainer(const Pylon::DataProcessing::CVariantContainer& variantContainer)
     {
-        // Scores
-        auto posScores = variantContainer.find("Scores");
-        if (posScores != variantContainer.end())
+        // fixed_score
+        auto posfixed_score = variantContainer.find("fixed_score");
+        if (posfixed_score != variantContainer.end())
         {
-            const Pylon::DataProcessing::CVariant& value = posScores->second;
+            const Pylon::DataProcessing::CVariant& value = posfixed_score->second;
             if (value.HasError() == false)
             {
                 for(size_t i = 0; i < value.GetNumArrayValues(); ++i)
                 {
-                    const Pylon::DataProcessing::CVariant scoresValue = value.GetArrayValue(i);
-                    if (scoresValue.HasError() == false)
+                    const Pylon::DataProcessing::CVariant fixed_scoreValue = value.GetArrayValue(i);
+                    if (fixed_scoreValue.HasError() == false)
                     {
-                        scores.push_back(scoresValue.ToDouble());
+                        fixed_score.push_back(fixed_scoreValue.ToDouble());
                     }
                     else
                     {
@@ -56,19 +55,19 @@ public:
             }
         }
 
-        // Positions_px
-        auto posPositions_px = variantContainer.find("Positions_px");
-        if (posPositions_px != variantContainer.end())
+        // fixed_position
+        auto posfixed_position = variantContainer.find("fixed_position");
+        if (posfixed_position != variantContainer.end())
         {
-            const Pylon::DataProcessing::CVariant& value = posPositions_px->second;
+            const Pylon::DataProcessing::CVariant& value = posfixed_position->second;
             if (value.HasError() == false)
             {
                 for(size_t i = 0; i < value.GetNumArrayValues(); ++i)
                 {
-                    const Pylon::DataProcessing::CVariant positions_pxValue = value.GetArrayValue(i);
-                    if (positions_pxValue.HasError() == false)
+                    const Pylon::DataProcessing::CVariant fixed_positionValue = value.GetArrayValue(i);
+                    if (fixed_positionValue.HasError() == false)
                     {
-                        positions_px.push_back(positions_pxValue.ToPointF2D());
+                        fixed_position.push_back(fixed_positionValue.ToPointF2D());
                     }
                     else
                     {
@@ -85,19 +84,19 @@ public:
             }
         }
 
-        // VScalingFactors
-        auto posVScalingFactors = variantContainer.find("VScalingFactors");
-        if (posVScalingFactors != variantContainer.end())
+        // mobile_score
+        auto posmobile_score = variantContainer.find("mobile_score");
+        if (posmobile_score != variantContainer.end())
         {
-            const Pylon::DataProcessing::CVariant& value = posVScalingFactors->second;
+            const Pylon::DataProcessing::CVariant& value = posmobile_score->second;
             if (value.HasError() == false)
             {
                 for(size_t i = 0; i < value.GetNumArrayValues(); ++i)
                 {
-                    const Pylon::DataProcessing::CVariant vScalingFactorsValue = value.GetArrayValue(i);
-                    if (vScalingFactorsValue.HasError() == false)
+                    const Pylon::DataProcessing::CVariant mobile_scoreValue = value.GetArrayValue(i);
+                    if (mobile_scoreValue.HasError() == false)
                     {
-                        vScalingFactors.push_back(vScalingFactorsValue.ToDouble());
+                        mobile_score.push_back(mobile_scoreValue.ToDouble());
                     }
                     else
                     {
@@ -114,48 +113,19 @@ public:
             }
         }
 
-        // HScalingFactors
-        auto posHScalingFactors = variantContainer.find("HScalingFactors");
-        if (posHScalingFactors != variantContainer.end())
+        // mobile_position
+        auto posmobile_position = variantContainer.find("mobile_position");
+        if (posmobile_position != variantContainer.end())
         {
-            const Pylon::DataProcessing::CVariant& value = posHScalingFactors->second;
+            const Pylon::DataProcessing::CVariant& value = posmobile_position->second;
             if (value.HasError() == false)
             {
                 for(size_t i = 0; i < value.GetNumArrayValues(); ++i)
                 {
-                    const Pylon::DataProcessing::CVariant hScalingFactorsValue = value.GetArrayValue(i);
-                    if (hScalingFactorsValue.HasError() == false)
+                    const Pylon::DataProcessing::CVariant mobile_positionValue = value.GetArrayValue(i);
+                    if (mobile_positionValue.HasError() == false)
                     {
-                        hScalingFactors.push_back(hScalingFactorsValue.ToDouble());
-                    }
-                    else
-                    {
-                        hasError = true;
-                        errorMessage = value.GetErrorDescription();
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                hasError = true;
-                errorMessage = value.GetErrorDescription();
-            }
-        }
-
-        // Positions_m
-        auto posPositions_m = variantContainer.find("Positions_m");
-        if (posPositions_m != variantContainer.end())
-        {
-            const Pylon::DataProcessing::CVariant& value = posPositions_m->second;
-            if (value.HasError() == false)
-            {
-                for(size_t i = 0; i < value.GetNumArrayValues(); ++i)
-                {
-                    const Pylon::DataProcessing::CVariant positions_mValue = value.GetArrayValue(i);
-                    if (positions_mValue.HasError() == false)
-                    {
-                        positions_m.push_back(positions_mValue.ToPointF2D());
+                        mobile_position.push_back(mobile_positionValue.ToPointF2D());
                     }
                     else
                     {

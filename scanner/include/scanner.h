@@ -11,38 +11,33 @@
 #include <vector>
 #include <list>
 #include <algorithm>
-#include <thread>
 
 #include "logging.h"
-#include "xyz.h"
+#include "xy.h"
 
 // Namespaces for using pylon objects
 using namespace Pylon;
 using namespace Pylon::DataProcessing;
 
-typedef std::vector<XYZ> Path;
+typedef std::vector<XY> Path;
 
-Path buildScanPath (double x_min, XYZ max, double width) {
-    Path path;
-    int num_passes = std::ceil((max.x - x_min) / width) + 1;
+Path buildScanPath (XY start, XY max, double width) {
+    Path path {start};
+    int num_passes = std::ceil((max.x - start.x) / width) + 1;
     for (int i = 0; i < num_passes*2; ++i) {
-        double x_coordinate = (std::min)(width * (i/2) + x_min, max.x);
+        double x_coordinate = (std::min)(width * (i/2) + start.x, max.x);
         double y_coordinate = max.y * (((i+1)/2) % 2);
-        path.push_back(XYZ(x_coordinate, y_coordinate));
+        path.push_back(XY(x_coordinate, y_coordinate));
     }
     return path;
-}
-
-void wait(unsigned int ms) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 // Should be a singleton
 class PylonRecipe {
 public:
-    XYZ alignment;
+    XY alignment;
 
-    PylonRecipe(const Pylon::String_t& recipePath, XYZ alignment)
+    PylonRecipe(const Pylon::String_t& recipePath, XY alignment)
         : resultCollector(), recipe(), alignment(alignment) {
         Logger::debug("Initializing new pylon recipe");
         PylonInitialize();  // Before using any pylon methods, the pylon runtime must be initialized.
@@ -79,28 +74,30 @@ public:
         recipe.Start();
     }
 
-    bool Detect(XYZ& position) {
-    ResultData result;
-    if (!resultCollector.GetWaitObject().Wait(100)) {// Blocks until image received, wait is ms
-        Logger::error("Scanner::detectObject: Camera data result timeout");
-        return false;
-    }
+    bool Detect(ResultData& result) {
+        if (!resultCollector.GetWaitObject().Wait(100)) {// Blocks until image received, wait is ms
+            Logger::error("Scanner::detectObject: Camera data result timeout");
+            return false;
+        }
 
-    resultCollector.GetResultData(result);
+        resultCollector.GetResultData(result);
 
-    if (result.hasError) {
-        std::cout << "Scanner::detectObject: An error occurred while processing recipe: " << result.errorMessage << std::endl; // Todo: Make this work with Logger
-        return false;
-    }
+        if (result.hasError) {
+            std::cout << "Scanner::detectObject: An error occurred while processing recipe: " << result.errorMessage << std::endl; // Todo: Make this work with Logger
+            return false;
+        }
 
-    if (result.scores.empty()) {
-        Logger::verbose("Scanner::detectObject: No object detected...");
-        return false;
-    }
+        if (result.mobile_score.empty() && result.fixed_score.empty()) {
+            Logger::verbose("Scanner::detectObject: No object detected...");
+            return false;
+        }
+        
+        Logger::info(
+            !result.mobile_score.empty() ? "mobile connector detected!\n" : "" + 
+            !result.fixed_score.empty() ? "fixed connector detected!" : ""
+        );
 
-    position = XYZ(result.positions_m[0].X * alignment.x, result.positions_m[0].Y * alignment.y) * 1000;
-    Logger::info("Object detected!");
-    return true;
+        return true;
     }
 
     void Stop() {
@@ -116,68 +113,164 @@ private:
     CRecipe recipe;
 };
 
-bool Scan (PylonRecipe& recipe, Path path, int speed = 100) {
+std::pair<bool, bool> ScanForMobile (PylonRecipe& recipe, Path path, int speed, XY& fixed_position) {
     // Begin scan
-    Logger::debug("Entering Scan Loop");
-    bool object_detected = false;
+    Logger::debug("Entering mobile scan Loop");
+    bool fixed_detected = false;
+    double fixed_error = (std::numeric_limits<double>::max)();
     for (size_t i = 0; i < path.size(); ++i) {
         SEL_Interface::MoveToPosition(path[i], speed);
-        DS->UpdateSEL();
+        commander->UpdateSEL();
 
-        while(DS->in_motion) { // Continously get camera data and check if move has completed
-            DS->UpdateSEL();
-
+        while(commander->in_motion) { // Continously get camera data and check if move has completed
             // Get camera data
-            XYZ detected_position;
-            if(!recipe.Detect(detected_position)) {
+            ResultData result;
+            if (!recipe.Detect(result)) {
+                commander->UpdateSEL();
                 continue;
             }
-            
-            SEL_Interface::HaltAll();
 
-            DS->waitForMotionComplete();
+            // If mobile connector seen
+            if (!result.mobile_score.empty()) {
+                SEL_Interface::HaltAll();
 
-            if (recipe.Detect(detected_position)) {
-                return true;
+                commander->waitForXYMotionComplete();
+
+                ResultData new_result;
+                if (recipe.Detect(new_result) && !new_result.mobile_score.empty()) {
+                    return {true, fixed_detected};
+                }
+
+                SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/2), 1));
+                commander->UpdateSEL();
+                continue;
             }
 
-            SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/2), 1));
-            DS->UpdateSEL();
-            object_detected = true;
+            // if fixed connector seen
+            if (!result.fixed_score.empty()) {
+                commander->UpdateSEL();
+                fixed_detected = true;
+                double error = std::sqrt(std::pow(result.fixed_position[0].X, 2) + std::pow(result.fixed_position[0].Y, 2));
+                if ( error < fixed_error) {
+                    fixed_error = error;
+                    fixed_position = XY(result.fixed_position[0].X, result.fixed_position[0].Y);
+                }
+                continue;
+            }
+
+            // This should never be reached but if you somehow end up here, update the commander for good measure
+            commander->UpdateSEL();
         }
     }
+
+    return {false, fixed_detected};
+}
+
+bool ScanForFixed (PylonRecipe& recipe, Path path, int speed) {
+    // Begin scan
+    Logger::debug("Entering fixed scan Loop");
+    for (size_t i = 0; i < path.size(); ++i) {
+        SEL_Interface::MoveToPosition(path[i], speed);
+        commander->UpdateSEL();
+
+        while(commander->in_motion) { // Continously get camera data and check if move has completed
+            // Get camera data
+            ResultData result;
+            if (!recipe.Detect(result)) {
+                commander->UpdateSEL();
+                continue;
+            }
+
+            // If fixed connector seen
+            if (!result.fixed_score.empty()) {
+                SEL_Interface::HaltAll();
+
+                commander->waitForXYMotionComplete();
+
+                ResultData new_result;
+                if (recipe.Detect(new_result) && !new_result.fixed_score.empty()) {
+                    return true;
+                }
+
+                SEL_Interface::MoveToPosition(path[(std::max)(i-1, size_t(0))], (std::max)(int(speed/2), 1));
+                commander->UpdateSEL();
+                continue;
+            }
+
+            commander->UpdateSEL();
+        }
+    }
+
     return false;
 }
 
-bool Refine(PylonRecipe& recipe, int speed, double tolerance, double scale_factor) {
-    bool within_tolerance = false;
-    Logger::debug("Entering refinement loop...");
-
-    while (!within_tolerance) {
-        XYZ error;
-        if(!recipe.Detect(error)) {
-            Logger::error("No object detected in refinement loop");
+bool RefineToMobile(PylonRecipe& recipe, int speed, double tolerance, double scale_factor) {
+    Logger::debug("Entering mobile refinement loop...");
+    int detection_errors = 0;
+    while (detection_errors <= 10) {
+        ResultData result;
+        if(!recipe.Detect(result)) {
+            Logger::error("No mobile connector detected in refinement loop!");
+            ++detection_errors;
             continue;
         }
 
-        DS->UpdateSEL();
+        detection_errors = 0;
 
-        XYZ target_position = DS->position - error * scale_factor;
+        if (!result.mobile_score.empty()) {
+            commander->UpdateSEL();
+            auto error = XY(result.mobile_position[0].X, result.mobile_position[0].Y) * scale_factor;
 
-        within_tolerance = error.magnitude() < tolerance;
+            Logger::info("Current Position: " + commander->position.toString());
+            Logger::info("Detected Error: " + error.toString());
 
-        Logger::info("Current Position: " + DS->position.toString());
-        Logger::info("Detected Error: " + error.toString());
-        Logger::info("Target position: " + target_position.toString());
+            if (error.magnitude() < tolerance) {
+                Logger::info("Success! Total error " + std::to_string(error.magnitude()));
+                return true;
+            }
 
-        if (within_tolerance) {
-            return true;
+            XY target_position = commander->position - error;
+            Logger::info("Target position: " + target_position.toString());
+            SEL_Interface::MoveToPosition(target_position, speed);
+            commander->waitForXYMotionComplete();
         }
-        
-        SEL_Interface::MoveToPosition(target_position, speed);
-        DS->waitForMotionComplete();
     }
-    Logger::error("I don't think you should be seeing this message...");
+
+    return false;
+}
+
+bool RefineToFixed(PylonRecipe& recipe, int speed, double tolerance, double scale_factor) {
+    Logger::debug("Entering fixed refinement loop...");
+    int detection_errors = 0;
+    while (detection_errors <= 10) {
+        ResultData result;
+        if(!recipe.Detect(result)) {
+            Logger::error("No fixed connector detected in refinement loop! (" + std::to_string(detection_errors) + ")" );
+            ++detection_errors;
+            continue;
+        }
+
+        detection_errors = 0;
+
+        if (!result.fixed_score.empty()) {
+            commander->UpdateSEL();
+            auto error = XY(result.fixed_position[0].X, result.fixed_position[0].Y) * scale_factor;
+
+            Logger::info("Current Position: " + commander->position.toString());
+            Logger::info("Detected Error: " + error.toString());
+
+            if (error.magnitude() < tolerance) {
+                Logger::info("Success! Total error " + std::to_string(error.magnitude()));
+                return true;
+            }
+
+            XY target_position = commander->position - error;
+            Logger::info("Target position: " + target_position.toString());
+            SEL_Interface::MoveToPosition(target_position, speed);
+            commander->waitForXYMotionComplete();
+        }
+    }
+
     return false;
 }
 
