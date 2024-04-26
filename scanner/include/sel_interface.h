@@ -139,6 +139,8 @@ namespace SEL_Interface
             throw std::runtime_error(err);
         }
 
+        Logger::debug("Moving to position " + position.toString());
+
         if (acceleration < 0) {
             Logger::warn("SEL_Interface::MoveToPosition: A negative acceleration was provided. Using controller default value instead.");
             acceleration = 0.0;
@@ -220,7 +222,7 @@ namespace SEL_Interface
 
     // TODO: Make this use uints where appropriate
     void SetOutputs(std::vector<int> ports, std::vector<bool> values, std::vector<bool>& SEL_outputs) {
-        Logger::debug("Setting SEL outputs");
+        Logger::verbose("Setting SEL outputs");
         if (ports.size() != values.size() ) {
             throw std::runtime_error("SEL_Interface::SetOutputs: ports and values must have the same number of elements");
         }

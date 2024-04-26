@@ -50,13 +50,13 @@ int main(int argc, char* argv[])
 
     // Workspace parameters
     XY workspace = XY(400.0, 600.0);
-    XY camera_to_gripper = XY(-165.1, 1.6); // mm
+    XY camera_to_gripper = XY(-164.1, 0.95); // mm
 
     // Scanning parameters
-    double scan_width = 50.0; // mm
+    double scan_width = 40.0; // mm
     int scan_speed = 200.0; // mm/s
     double refinement_speed = 200.0; // mm/s
-    XY mobile_scan_start = XY(-camera_to_gripper.x + scan_width/2, 0.0);
+    XY mobile_scan_start = XY(-camera_to_gripper.x + scan_width, 0.0);
 
     // Handle command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -125,13 +125,13 @@ int main(int argc, char* argv[])
         auto [success, fixed_found] = ScanForMobile(Scanner, mobile_scan_path, scan_speed, fixed_position);
 
         if (success) {
-            success = RefineToMobile(Scanner, refinement_speed, mobile_tolerance, mobile_scale_factor);
+            success = RefineToMobile(Scanner, refinement_speed, mobile_tolerance, mobile_scale_factor, camera_alignment);
         }
 
         if (success) {
             // Grasp mobile connector
             commander->UpdateSEL();
-            commander->GraspMobile(camera_to_gripper, scan_speed, true);
+            commander->GraspMobile(camera_to_gripper, scan_speed, false);
         
             // Set up to find fixed connector
             auto fixed_scan_start = (fixed_found ? fixed_position : (commander->position - camera_to_gripper));
@@ -146,13 +146,13 @@ int main(int argc, char* argv[])
         }
 
         if (success) {
-            success = RefineToFixed(Scanner, refinement_speed, fixed_tolerance, fixed_scale_factor);
+            success = RefineToFixed(Scanner, refinement_speed, fixed_tolerance, fixed_scale_factor, camera_alignment);
         }
 
         Scanner.Stop();
 
         if (success) {
-            commander->MateMobileToFixed(camera_to_gripper, scan_speed, true);
+            commander->MateMobileToFixed(camera_to_gripper, scan_speed, false);
         }
 
         SEL_Interface::MoveToPosition(mobile_scan_start, scan_speed);

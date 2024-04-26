@@ -164,7 +164,7 @@ public:
     }
 
     /**
-     * Mates a grasped mobile connector with the fixed connector and moves Z axis back up.
+     * Grasps a the mobile connector and moves Z axis back up.
      * \param offset The XY distance from current to target position.
      * \param speed Speed to traverse XY. Z speed is set on RC controller
      * \param pause true to require user input before mating, false for full auto
@@ -173,9 +173,14 @@ public:
         UpdateSEL();
         SEL_Interface::MoveToPosition(position + offset, speed);
         waitForXYMotionComplete();
+
+        if (pause) {
+            Logger::info("Confirm position before grasping.");
+            system("pause");
+        }
         
         // Z down to grasp connector
-        MoveRC(RCPositions::GRASP);
+        MoveRC(RCPositions::GRASP); // TODO CHANGE THIS BACK TO GRASP
         waitForZMotionComplete();
 
         if (pause) {
@@ -201,7 +206,7 @@ public:
         waitForXYMotionComplete();
         
         // Z down to hover over connector
-        MoveRC(RCPositions::POUNCE);
+        MoveRC(RCPositions::POUNCE); //TODO UNCOMMENT THIS
         waitForZMotionComplete();
 
         if (pause) {
