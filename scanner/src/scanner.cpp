@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
     double mobile_scale_factor = 0.59; 
 
     // Workspace parameters
-    XY workspace = XY(400.0, 600.0);
-    XY camera_to_gripper = XY(-164.1, 0.95); // mm
+    XY workspace = XY(400.0, 450.0);
+    XY camera_to_gripper = XY(-164.1, 0.5); // mm
 
     // Scanning parameters
-    double scan_width = 40.0; // mm
-    int scan_speed = 200.0; // mm/s
-    double refinement_speed = 200.0; // mm/s
+    double scan_width = 35.0; // mm
+    int scan_speed = 200; // mm/s
+    int refinement_speed = 200; // mm/s
     XY mobile_scan_start = XY(-camera_to_gripper.x + scan_width, 0.0);
 
     // Handle command line arguments
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
         SEL_Interface::HaltAll(); // Halt all for safety
 
         Gripper = new SimpleSerial(gripper_port, gripper_rate);
-
+        
         // Create commander
         commander = Commander::getInstance();
 
@@ -118,11 +118,11 @@ int main(int argc, char* argv[])
         auto Scanner = PylonRecipe(SCANNER_RECIPE, camera_alignment);
 
         // Create scan path
-        Path mobile_scan_path = buildScanPath(mobile_scan_start, workspace, scan_width);
+        Path scan_path = buildScanPath(mobile_scan_start, workspace, scan_width);
         
         // Find mobile connector, record fixed connector location if seen
         auto fixed_position = XY();
-        auto [success, fixed_found] = ScanForMobile(Scanner, mobile_scan_path, scan_speed, fixed_position);
+        auto [success, fixed_found] = ScanForMobile(Scanner, scan_path, scan_speed, fixed_position);
 
         if (success) {
             success = RefineToMobile(Scanner, refinement_speed, mobile_tolerance, mobile_scale_factor, camera_alignment);
@@ -138,11 +138,14 @@ int main(int argc, char* argv[])
 
             SEL_Interface::MoveToPosition(fixed_scan_start, scan_speed);
 
-            Path fixed_scan_path = buildScanPath(fixed_scan_start, workspace, scan_width);
-
             commander->waitForAllMotionComplete();
             
-            success = ScanForFixed(Scanner, fixed_scan_path, scan_speed);
+            success = ScanForFixed(Scanner, scan_path, scan_speed);
+
+            if (!success) {
+                Path new_scan_path = buildScanPath(mobile_scan_start, workspace, scan_width);
+                success = ScanForFixed(Scanner, new_scan_path, scan_speed);
+            }
         }
 
         if (success) {

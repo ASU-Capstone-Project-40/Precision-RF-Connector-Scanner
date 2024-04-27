@@ -121,9 +121,17 @@ private:
 std::pair<bool, bool> ScanForMobile (PylonRecipe& recipe, Path& path, int speed, XY& fixed_position) {
     // Begin scan
     Logger::debug("Entering mobile scan Loop");
+
+    // Check if mobile connector is already in frame
+    ResultData res;
+    if (recipe.Detect(res) && !res.mobile_score.empty()) {
+        return {true, false};
+    }
+
     Path path_copy = path;
     bool fixed_detected = false;
     double fixed_error = (std::numeric_limits<double>::max)();
+
     for (size_t i = 0; i < path_copy.size(); ++i) {
         SEL_Interface::MoveToPosition(path_copy[i], speed);
         commander->UpdateSEL();
@@ -167,6 +175,7 @@ std::pair<bool, bool> ScanForMobile (PylonRecipe& recipe, Path& path, int speed,
             // This should never be reached but if you somehow end up here, update the commander for good measure
             commander->UpdateSEL();
         }
+        path.erase(path.begin());
     }
 
     return {false, fixed_detected};
@@ -175,6 +184,13 @@ std::pair<bool, bool> ScanForMobile (PylonRecipe& recipe, Path& path, int speed,
 bool ScanForFixed (PylonRecipe& recipe, Path path, int speed) {
     // Begin scan
     Logger::debug("Entering fixed scan Loop");
+    
+    // Check if fixed connector is already in frame
+    ResultData res;
+    if (recipe.Detect(res) && !res.fixed_score.empty()) {
+        return true;
+    }
+
     for (size_t i = 0; i < path.size(); ++i) {
         SEL_Interface::MoveToPosition(path[i], speed);
         commander->UpdateSEL();

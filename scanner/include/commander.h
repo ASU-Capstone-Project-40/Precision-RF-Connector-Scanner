@@ -11,6 +11,7 @@
 
 enum RCPositions {
     HOME = 0,
+    BACKOFF = 12,
     POUNCE = 13,
     GRASP = 14,
     MATE = 15,
@@ -180,7 +181,7 @@ public:
         }
         
         // Z down to grasp connector
-        MoveRC(RCPositions::GRASP); // TODO CHANGE THIS BACK TO GRASP
+        MoveRC(RCPositions::GRASP);
         waitForZMotionComplete();
 
         if (pause) {
@@ -206,7 +207,7 @@ public:
         waitForXYMotionComplete();
         
         // Z down to hover over connector
-        MoveRC(RCPositions::POUNCE); //TODO UNCOMMENT THIS
+        MoveRC(RCPositions::POUNCE);
         waitForZMotionComplete();
 
         if (pause) {
@@ -219,11 +220,13 @@ public:
         waitForZMotionComplete();
 
         // Open gripper
-        Gripper_Interface::Open();
+        Gripper_Interface::MoveTo50();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         // Z up
         MoveRC(RCPositions::HOME);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Gripper_Interface::Open();
     }
 
 private:

@@ -78,16 +78,38 @@ namespace Gripper_Interface
         return true;
     }
 
+    bool MoveTo45(/*int percent*/) {
+        // Multiply percent by 10
+        // Split high and low bytes
+        // Add to move command
+        // Calculate CRC
+        std::vector<unsigned char> move {0x01, 0x06, 0x01, 0x03, 0x01, 0xC2, 0xF8, 0x37};
+        Gripper->writeVector(move);
+        // bool success = CheckResponse(close);
+        return true;
+    }
+    
     /**
      * Moves gripper jaws to a certain percentage of open.
      * TODO: Currently hard-coded to 50%
     */
-    bool MoveTo(/*int percent*/) {
+    bool MoveTo50(/*int percent*/) {
         // Multiply percent by 10
         // Split high and low bytes
         // Add to move command
         // Calculate CRC
         std::vector<unsigned char> move {0x01, 0x06, 0x01, 0x03, 0x01, 0xF4, 0x78, 0x21};
+        Gripper->writeVector(move);
+        // bool success = CheckResponse(close);
+        return true;
+    }
+
+    bool MoveTo60(/*int percent*/) {
+        // Multiply percent by 10
+        // Split high and low bytes
+        // Add to move command
+        // Calculate CRC
+        std::vector<unsigned char> move {0x01, 0x06, 0x01, 0x03, 0x02, 0x58, 0x78, 0xAC};
         Gripper->writeVector(move);
         // bool success = CheckResponse(close);
         return true;
